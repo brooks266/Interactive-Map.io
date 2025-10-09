@@ -116,7 +116,6 @@
     let map;
     let markers;  // Cluster group
     let allMarkers = [];  // Array to store all individual markers for filtering
-    let fuse;  // Fuse.js instance for fuzzy search
     let searchTimeout;  // For debouncing search
     let creationMode = false;  // Toggle for creation mode
     let tempMarker = null;  // Temporary marker during creation
@@ -146,7 +145,7 @@
         if (address) {
             popupContent += `<br><strong>Address:</strong><br>${address}`;
         }
-        if (user && user.trim() !== '') {
+        if (user) {
             popupContent += `<br><strong>User:</strong> ${user}`;
         }
         if (notes) {
@@ -170,25 +169,17 @@
     function addPermanentMarker(title, notes, address, user, lat, lon) {
         const popupContent = createPopupContent(title, lat, lon, notes, address, user);
         const marker = L.marker([lat, lon]).bindPopup(popupContent);
-        const markerObj = { title, notes, address, user: user || '', lat, lon, marker };
+        const markerObj = { title, notes, address, user, lat, lon, marker };
         allMarkers.push(markerObj);
-        newMarkers.push({ latitude: lat, longitude: lon, title, notes, address, user: user || '' });  // For export
+        newMarkers.push({ latitude: lat, longitude: lon, title, notes, address, user});  // For export
         markers.addLayer(marker);
-        rebuildFuseAndClusters();
+        rebuildClusters();
         document.getElementById('save-csv-btn').style.display = 'inline-block';
         console.log(`Added new marker: ${title} by ${user || 'Unknown'} at [${lat.toFixed(6)}, ${lon.toFixed(6)}]`);
     }
 
-    // Function to rebuild Fuse index and update clusters (after adding new markers)
-    function rebuildFuseAndClusters() {
-        if (allMarkers.length > 0) {
-            fuse = new Fuse(allMarkers, {
-                keys: ['title', 'notes', 'address', 'user'],
-                threshold: 0.6,
-                ignoreLocation: true,
-                includeScore: true
-            });
-        }
+    // Function to rebuild clusters (after adding new markers; no Fuse needed)
+    function rebuildClusters() {
         // Re-apply current search filter if active
         const currentSearch = document.getElementById('search').value;
         if (currentSearch) {
@@ -200,9 +191,9 @@
         }
     }
 
-    // Function to filter and update visible markers based on search term using Fuse.js
+    // Function to filter and update visible markers based on exact substring search (case-insensitive)
     function filterMarkers(searchTerm) {
-        const term = searchTerm.trim();
+        const term = searchTerm.trim().toLowerCase();
         markers.clearLayers();
         let visibleCount = 0;
         
@@ -211,18 +202,17 @@
                 markers.addLayer(markerObj.marker);
                 visibleCount++;
             });
-        } else if (fuse) {
-            const results = fuse.search(term);
-            const matchingIndices = new Set(results.map(result => result.refIndex));
-            
-            allMarkers.forEach((markerObj, index) => {
-                if (matchingIndices.has(index)) {
+        } else {
+            allMarkers.forEach(markerObj => {
+                const titleMatch = markerObj.title.toLowerCase().includes(term);
+                const notesMatch = markerObj.notes.toLowerCase().includes(term);
+                const addressMatch = (markerObj.address || '').toLowerCase().includes(term);
+                const userMatch = (markerObj.user || '').toLowerCase().includes(term);
+                
+                if (titleMatch || notesMatch || addressMatch || userMatch) {
                     markers.addLayer(markerObj.marker);
                     visibleCount++;
-                    const result = results.find(r => r.refIndex === index);
-                    if (result && index < 5) {
-                        console.log(`Match: "${markerObj.title}" (score: ${result.score.toFixed(3)})`);
-                    }
+                    //console.log(`Match: "${markerObj.title}" (via ${titleMatch ? 'title' : notesMatch ? 'notes' : addressMatch ? 'address' : userMatch ? 'user'})`);
                 }
             });
         }
@@ -359,7 +349,7 @@
         console.log('Email client opened with CSV content. Please send the email.');
     }
 
-    // Function to load and parse CSV, then add markers to cluster and build Fuse index (synchronous; requires lat/lon)
+    // Function to load and parse CSV, then add markers to cluster (synchronous; requires lat/lon)
     function loadCSVAndAddMarkers() {
         Papa.parse('data.csv', {
             download: true,
@@ -391,7 +381,7 @@
                         // Create marker with popup
                         const marker = L.marker([lat, lon]).bindPopup(popupContent);
                         
-                        // Store marker with its data for searching (include address and user for Fuse) + lat/lon for details page
+                        // Store marker with its data for searching (include address and user) + lat/lon for details page
                         allMarkers.push({ title, notes, address, user, lat, lon, marker });
                         
                         // Add to cluster
@@ -403,20 +393,10 @@
                     }
                 });
 
-                // Build Fuse.js index on allMarkers
-                if (allMarkers.length > 0) {
-                    fuse = new Fuse(allMarkers, {
-                        keys: ['title', 'notes', 'address', 'user'],  // Includes user for search
-                        threshold: 0.6,  // Fuzziness: 0=exact, 1=loose (0.6 allows typos/partial matches)
-                        ignoreLocation: true,  // Don't prioritize word position
-                        includeScore: true  // Include match scores in results
-                    });
-                }
-
                 // Add the cluster group to the map
                 map.addLayer(markers);
 
-                console.log(`${validMarkers} markers loaded (${skippedCount} skipped due to missing lat/lon). Fuse index built.`);
+                console.log(`${validMarkers} markers loaded (${skippedCount} skipped due to missing lat/lon).`);
             },
             error: function(error) {
                 console.error('Error loading CSV:', error);
@@ -431,6 +411,5 @@
     // Load the data when the page loads
     loadCSVAndAddMarkers();
 </script>
-
 </body>
 </html>
