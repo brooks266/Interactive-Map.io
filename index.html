@@ -122,32 +122,6 @@
     let clickLat, clickLon;  // Store clicked coords
     let originalData = [];  // Store original CSV data for export
     let newMarkers = [];  // Track new markers for export
-
-    // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
-    map = L.map('map').setView([39.8283, -98.5795], 10);  // US center, zoom level 4
-	
-	// Define base layers
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    });
-    
-    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-    });
-    
-    // Add default layer (OSM) to map
-    osm.addTo(map);
-    // Add layer control in bottom left
-    const baseMaps = {
-        "OpenStreetMap": osm,
-        "Satellite": satellite
-    };
-    L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
-    
-    // Add OpenStreetMap tiles (free; self-host tiles if needed via a tile server)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
 	
 	// Function to center map on user's geolocation
     function centerOnUserLocation() {
@@ -173,8 +147,35 @@
             console.warn('Geolocation not supported by this browser. Using default US view.');
         }
     }
-    // Call to center on user location after map initialization
+
+    // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
+    map = L.map('map').setView([39.8283, -98.5795], 10);  // US center, zoom level 4
+	
+	// Call to center on user location after map initialization
     centerOnUserLocation();
+	
+	// Define base layers
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    });
+    
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    });
+    
+    // Add default layer (OSM) to map
+    osm.addTo(map);
+    // Add layer control in bottom left
+    const baseMaps = {
+        "OpenStreetMap": osm,
+        "Satellite": satellite
+    };
+    L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
+    
+    // Add OpenStreetMap tiles (free; self-host tiles if needed via a tile server)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
     // Create a marker cluster group
     markers = L.markerClusterGroup({
