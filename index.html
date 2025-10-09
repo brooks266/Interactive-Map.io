@@ -124,12 +124,39 @@
     let newMarkers = [];  // Track new markers for export
 
     // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
-    map = L.map('map').setView([39.8283, -98.5795], 4);  // US center, zoom level 4
+    map = L.map('map').setView([39.8283, -98.5795], 10);  // US center, zoom level 4
     
     // Add OpenStreetMap tiles (free; self-host tiles if needed via a tile server)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
+	
+	// Function to center map on user's geolocation
+    function centerOnUserLocation() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    const userLat = position.coords.latitude;
+                    const userLon = position.coords.longitude;
+                    map.setView([userLat, userLon], 12);  // Center on user with city-level zoom (adjust as needed)
+                    console.log(`Map centered on user location: [${userLat.toFixed(6)}, ${userLon.toFixed(6)}]`);
+                },
+                function(error) {
+                    console.warn('Geolocation failed or denied. Using default US view.', error);
+                    // Fallback: keep the default US center
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000  // 5 minutes cache
+                }
+            );
+        } else {
+            console.warn('Geolocation not supported by this browser. Using default US view.');
+        }
+    }
+    // Call to center on user location after map initialization
+    centerOnUserLocation();
 
     // Create a marker cluster group
     markers = L.markerClusterGroup({
