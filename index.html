@@ -124,7 +124,7 @@
     let newMarkers = [];  // Track new markers for export
 
     // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
-    map = L.map('map').setView([39.8283, -98.5795], 10);  // US center, zoom level 4
+    map = L.map('map').setView([39.8283, -98.5795], 4);  // US center, zoom level 4
     
     // Add OpenStreetMap tiles (free; self-host tiles if needed via a tile server)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -440,4 +440,5 @@
 </script>
 </body>
 </html>
+
 
