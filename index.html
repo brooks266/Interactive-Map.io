@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Locations Map</title>
+    
+    <!-- Leaflet CSS (CDN; download for self-hosting: https://leafletjs.com/download.html) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+    
+    <!-- Leaflet.markercluster CSS (CDN; download for self-hosting: https://github.com/Leaflet/Leaflet.markercluster) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
+    
+    <!-- Leaflet JS (CDN) -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+    
+    <!-- Leaflet.markercluster JS (CDN) -->
+    <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+    
+    <!-- PapaParse for CSV parsing (CDN; download: https://www.papaparse.com/docs#download) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    
+    <!-- Fuse.js for fuzzy search (CDN; download for self-hosting: https://github.com/krisk/Fuse) -->
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
+    
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        #map { height: 600px; width: 100%; border: 1px solid #ccc; margin-top: 10px; }
+        h1 { text-align: center; }
+        #search-container { text-align: center; margin-bottom: 10px; }
+        #search { 
+            width: 300px; 
+            padding: 10px; 
+            font-size: 16px; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        #search:focus { outline: none; border-color: #007cba; }
+        #add-btn { 
+            width: 40px; height: 40px; 
+            margin-left: 10px; 
+            background: #ccc; color: #333; 
+            border: none; border-radius: 50%; 
+            font-size: 20px; font-weight: bold; 
+            cursor: pointer; vertical-align: middle; 
+        }
+        #add-btn.active { background: #28a745; color: white; }
+        #save-csv-btn { 
+            display: none; 
+            margin-left: 10px; 
+            padding: 10px 15px; 
+            background: #007cba; color: white; 
+            border: none; border-radius: 4px; 
+            cursor: pointer; 
+        }
+        #save-csv-btn:hover { background: #005a87; }
+        
+        /* Modal Styles */
+        .modal { 
+            display: none; position: fixed; z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%; 
+            background-color: rgba(0,0,0,0.5); 
+        }
+        .modal-content { 
+            background-color: white; margin: 15% auto; 
+            padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3); 
+        }
+        .modal h3 { margin-top: 0; }
+        .modal input, .modal textarea { 
+            width: 100%; padding: 8px; margin: 5px 0 15px 0; 
+            border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; 
+        }
+        .modal textarea { height: 80px; resize: vertical; }
+        .modal button { 
+            padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; 
+        }
+        .modal .btn-primary { background: #007cba; color: white; }
+        .modal .btn-secondary { background: #6c757d; color: white; }
+        .modal .btn-primary:hover, .modal .btn-secondary:hover { opacity: 0.8; }
+    </style>
+</head>
+<body>
+    <h1>Interactive Map</h1>
+    
+    <div id="search-container">
+        <input type="text" id="search" placeholder="Search by title, notes, user, or address" />
+        <button id="add-btn" title="Add New Location">+</button>
+        <button id="save-csv-btn" title="Download Updated CSV" onclick="exportCSV()">Submit Location</button>
+    </div>
+    
+    <div id="map"></div>
+
+    <!-- Creation Modal -->
+    <div id="creation-modal" class="modal">
+        <div class="modal-content">
+            <h3>Add New Location</h3>
+            <p>Clicked at: <span id="click-coords"></span></p>
+            <input type="text" id="new-title" placeholder="Title (required)" />
+            <textarea id="new-notes" placeholder="Notes (optional)"></textarea>
+            <input type="text" id="new-address" placeholder="Address (optional, for search/display)" />
+			<input type="text" id="new-user" placeholder="Username" />
+            <button class="btn-primary" onclick="submitNewLocation()">Add Location</button>
+            <button class="btn-secondary" onclick="cancelNewLocation()">Cancel</button>
+        </div>
+    </div>
+
+<script>
+    // Global variables
+    let map;
+    let markers;  // Cluster group
+    let allMarkers = [];  // Array to store all individual markers for filtering
+    let fuse;  // Fuse.js instance for fuzzy search
+    let searchTimeout;  // For debouncing search
+    let creationMode = false;  // Toggle for creation mode
+    let tempMarker = null;  // Temporary marker during creation
+    let clickLat, clickLon;  // Store clicked coords
+    let originalData = [];  // Store original CSV data for export
+    let newMarkers = [];  // Track new markers for export
+
+    // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
+    map = L.map('map').setView([39.8283, -98.5795], 4);  // US center, zoom level 4
+    
+    // Add OpenStreetMap tiles (free; self-host tiles if needed via a tile server)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    // Create a marker cluster group
+    markers = L.markerClusterGroup({
+        maxClusterRadius: 50,
+        spiderfyOnMaxZoom: true,
+        showCoverageOnHover: true,
+        zoomToBoundsOnClick: true
+    });
+
+    // Function to create popup content (includes address and user if present)
+    function createPopupContent(title, lat, lon, notes, address, user) {
+        let popupContent = `<b>${title}</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
+        if (address) {
+            popupContent += `<br><strong>Address:</strong><br>${address}`;
+        }
+        if (user && user.trim() !== '') {
+            popupContent += `<br><strong>User:</strong> ${user}`;
+        }
+        if (notes) {
+            popupContent += `<br><br><strong>Notes:</strong><br>${notes}`;
+        }
+        // Add View Details link (passes data as URL-encoded JSON, including user)
+        const locationData = {
+            title,
+            lat: lat.toFixed(6),
+            lon: lon.toFixed(6),
+            address: address || 'N/A',
+            notes: notes || 'N/A',
+            user: user || 'N/A'
+        };
+        const encodedData = encodeURIComponent(JSON.stringify(locationData));
+        popupContent += `<br><br><a href="location.html?data=${encodedData}" style="background: #007cba; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; display: inline-block;">View Details</a>`;
+        return popupContent;
+    }
+
+    // Function to add a permanent marker from new data
+    function addPermanentMarker(title, notes, address, user, lat, lon) {
+        const popupContent = createPopupContent(title, lat, lon, notes, address, user);
+        const marker = L.marker([lat, lon]).bindPopup(popupContent);
+        const markerObj = { title, notes, address, user: user || '', lat, lon, marker };
+        allMarkers.push(markerObj);
+        newMarkers.push({ latitude: lat, longitude: lon, title, notes, address, user: user || '' });  // For export
+        markers.addLayer(marker);
+        rebuildFuseAndClusters();
+        document.getElementById('save-csv-btn').style.display = 'inline-block';
+        console.log(`Added new marker: ${title} by ${user || 'Unknown'} at [${lat.toFixed(6)}, ${lon.toFixed(6)}]`);
+    }
+
+    // Function to rebuild Fuse index and update clusters (after adding new markers)
+    function rebuildFuseAndClusters() {
+        if (allMarkers.length > 0) {
+            fuse = new Fuse(allMarkers, {
+                keys: ['title', 'notes', 'address', 'user'],
+                threshold: 0.6,
+                ignoreLocation: true,
+                includeScore: true
+            });
+        }
+        // Re-apply current search filter if active
+        const currentSearch = document.getElementById('search').value;
+        if (currentSearch) {
+            filterMarkers(currentSearch);
+        } else {
+            // Ensure all are visible
+            markers.clearLayers();
+            allMarkers.forEach(markerObj => markers.addLayer(markerObj.marker));
+        }
+    }
+
+    // Function to filter and update visible markers based on search term using Fuse.js
+    function filterMarkers(searchTerm) {
+        const term = searchTerm.trim();
+        markers.clearLayers();
+        let visibleCount = 0;
+        
+        if (term === '') {
+            allMarkers.forEach(markerObj => {
+                markers.addLayer(markerObj.marker);
+                visibleCount++;
+            });
+        } else if (fuse) {
+            const results = fuse.search(term);
+            const matchingIndices = new Set(results.map(result => result.refIndex));
+            
+            allMarkers.forEach((markerObj, index) => {
+                if (matchingIndices.has(index)) {
+                    markers.addLayer(markerObj.marker);
+                    visibleCount++;
+                    const result = results.find(r => r.refIndex === index);
+                    if (result && index < 5) {
+                        console.log(`Match: "${markerObj.title}" (score: ${result.score.toFixed(3)})`);
+                    }
+                }
+            });
+        }
+        
+        console.log(`Showing ${visibleCount} markers (search: "${searchTerm}")`);
+    }
+
+    // Debounced search handler
+    function handleSearch() {
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const searchTerm = document.getElementById('search').value;
+            filterMarkers(searchTerm);
+        }, 300);
+    }
+
+    // Toggle creation mode
+    function toggleCreationMode() {
+        creationMode = !creationMode;
+        const addBtn = document.getElementById('add-btn');
+        addBtn.classList.toggle('active', creationMode);
+        const searchInput = document.getElementById('search');
+        searchInput.disabled = creationMode;
+        
+        if (creationMode) {
+            map.on('click', handleMapClick);
+            console.log('Creation mode: ON - Click map to add pin');
+        } else {
+            map.off('click', handleMapClick);
+            if (tempMarker) {
+                map.removeLayer(tempMarker);
+                tempMarker = null;
+            }
+            searchInput.disabled = false;
+            const currentSearch = searchInput.value;
+            if (currentSearch) filterMarkers(currentSearch);
+            console.log('Creation mode: OFF');
+        }
+    }
+
+    // Handle map click in creation mode
+    function handleMapClick(e) {
+        const lat = e.latlng.lat;
+        const lon = e.latlng.lng;
+        clickLat = lat;
+        clickLon = lon;
+        
+        // Remove previous temp marker
+        if (tempMarker) {
+            map.removeLayer(tempMarker);
+        }
+        
+        // Add temporary red marker (using divIcon for simplicity, no external dependencies)
+        tempMarker = L.marker([lat, lon], {
+            icon: L.divIcon({
+                className: 'temp-marker',
+                html: '<div style="background-color: red; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            })
+        }).addTo(map);
+        
+        // Show coords in modal and open it
+        document.getElementById('click-coords').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+        document.getElementById('creation-modal').style.display = 'block';
+        document.getElementById('new-title').focus();
+    }
+
+    // Submit new location
+    function submitNewLocation() {
+        const title = document.getElementById('new-title').value.trim();
+        const notes = document.getElementById('new-notes').value.trim();
+        const address = document.getElementById('new-address').value.trim();
+        const user = document.getElementById('new-user').value.trim();
+        
+        if (!title) {
+            alert('Title is required!');
+            return;
+        }
+        
+        // Add permanent marker
+        addPermanentMarker(title, notes, address, user, clickLat, clickLon);
+        
+        // Clear and close modal
+        document.getElementById('new-title').value = '';
+        document.getElementById('new-notes').value = '';
+        document.getElementById('new-address').value = '';
+		document.getElementById('new-user').value = '';
+        document.getElementById('creation-modal').style.display = 'none';
+        
+        // Remove temp marker
+        if (tempMarker) {
+            map.removeLayer(tempMarker);
+            tempMarker = null;
+        }
+        
+        // Exit creation mode after add
+        toggleCreationMode();
+    }
+
+    // Cancel new location
+    function cancelNewLocation() {
+        if (tempMarker) {
+            map.removeLayer(tempMarker);
+            tempMarker = null;
+        }
+        document.getElementById('creation-modal').style.display = 'none';
+        document.getElementById('new-title').value = '';
+        document.getElementById('new-notes').value = '';
+        document.getElementById('new-address').value = '';
+        document.getElementById('new-user').value = '';
+    }
+
+    // Export updated CSV via email (original + new markers, including user)
+    function exportCSV() {
+        let csvContent = 'latitude,longitude,title,notes,address,user\n';
+        
+        // Add original data
+        originalData.forEach(row => {
+            csvContent += `${row.latitude || ''},${row.longitude || ''},"${(row.title || '').replace(/"/g, '""')}","${(row.notes || '').replace(/"/g, '""')}","${(row.address || '').replace(/"/g, '""')}","${(row.user || '').replace(/"/g, '""')}"\n`;
+        });
+        
+        // Add new markers
+        newMarkers.forEach(marker => {
+            csvContent += `${marker.latitude},${marker.longitude},"${marker.title.replace(/"/g, '""')}","${marker.notes.replace(/"/g, '""')}","${marker.address.replace(/"/g, '""')}","${(marker.user || '').replace(/"/g, '""')}"\n`;
+        });
+        
+        // Open email client with CSV in body (mailto: workaround for client-side)
+        const subject = encodeURIComponent('Updated Map Data CSV');
+        const body = encodeURIComponent('Attached is the updated CSV file with new locations.\n\nCopy the content below and save as .csv:\n\n' + csvContent);
+        const mailtoLink = `mailto:taway133@gmail.com?subject=${subject}&body=${body}`;
+        window.location.href = mailtoLink;
+        
+        console.log('Email client opened with CSV content. Please send the email.');
+    }
+
+    // Function to load and parse CSV, then add markers to cluster and build Fuse index (synchronous; requires lat/lon)
+    function loadCSVAndAddMarkers() {
+        Papa.parse('data.csv', {
+            download: true,
+            header: true,
+            complete: function(results) {
+                const data = results.data;
+                originalData = data;  // Store for export
+                if (data.length === 0) {
+                    console.error('No data in CSV');
+                    return;
+                }
+
+                allMarkers = [];  // Reset array
+                let validMarkers = 0;
+                let skippedCount = 0;
+                
+                data.forEach((row, i) => {
+                    const lat = parseFloat(row.latitude);
+                    const lon = parseFloat(row.longitude);
+                    const title = row.title || `Location (${lat ? lat.toFixed(4) : 'Unknown'}, ${lon ? lon.toFixed(4) : 'Unknown'})`;
+                    const notes = row.notes || '';
+                    const address = row.address || '';
+                    const user = row.user || '';  // New user field, defaults to empty if missing
+
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        // Create popup content
+                        const popupContent = createPopupContent(title, lat, lon, notes, address, user);
+
+                        // Create marker with popup
+                        const marker = L.marker([lat, lon]).bindPopup(popupContent);
+                        
+                        // Store marker with its data for searching (include address and user for Fuse) + lat/lon for details page
+                        allMarkers.push({ title, notes, address, user, lat, lon, marker });
+                        
+                        // Add to cluster
+                        markers.addLayer(marker);
+                        validMarkers++;
+                    } else {
+                        console.warn(`Skipping row ${i + 1} (missing/invalid lat/lon):`, row);
+                        skippedCount++;
+                    }
+                });
+
+                // Build Fuse.js index on allMarkers
+                if (allMarkers.length > 0) {
+                    fuse = new Fuse(allMarkers, {
+                        keys: ['title', 'notes', 'address', 'user'],  // Includes user for search
+                        threshold: 0.6,  // Fuzziness: 0=exact, 1=loose (0.6 allows typos/partial matches)
+                        ignoreLocation: true,  // Don't prioritize word position
+                        includeScore: true  // Include match scores in results
+                    });
+                }
+
+                // Add the cluster group to the map
+                map.addLayer(markers);
+
+                console.log(`${validMarkers} markers loaded (${skippedCount} skipped due to missing lat/lon). Fuse index built.`);
+            },
+            error: function(error) {
+                console.error('Error loading CSV:', error);
+            }
+        });
+    }
+
+    // Event listeners
+    document.getElementById('add-btn').addEventListener('click', toggleCreationMode);
+    document.getElementById('search').addEventListener('input', handleSearch);
+
+    // Load the data when the page loads
+    loadCSVAndAddMarkers();
+</script>
+
+</body>
+</html>
