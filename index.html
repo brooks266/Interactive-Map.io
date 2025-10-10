@@ -126,6 +126,8 @@
         </div>
     </div>
 <script>
+	// Wait for DOM and deferred scripts to load before initializing
+    document.addEventListener('DOMContentLoaded', function() {
     // Global variables
     let map;
     let markers;  // Cluster group
@@ -489,9 +491,11 @@
     //         deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
     //     }
     // });
+	}
 </script>
 </body>
 </html>
+
 
 
 
