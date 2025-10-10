@@ -141,7 +141,7 @@
 
     // Session Check: Redirect to login if not authenticated
     if (!currentUser) {
-        window.location.href = '/login.html';
+        window.location.href = '/Interactive-Map.io/login.html';
     }
 
     // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
@@ -254,7 +254,7 @@
     function logout() {
         localStorage.removeItem('loggedInUser');
         currentUser = null;
-        window.location.href = '/login.html';
+        window.location.href = '/Interactive-Map.io/login.html';
     }
 
     // Toggle creation mode
@@ -493,6 +493,7 @@
 </script>
 </body>
 </html>
+
 
 
 
