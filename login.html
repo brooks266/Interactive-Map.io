@@ -64,7 +64,7 @@
             if (users[username] && users[username] === password) {
                 // Successful login: Store in localStorage
                 localStorage.setItem('loggedInUser', username);
-                window.location.href = 'Interactive-Map.io/index.html';  // Redirect to map
+                window.location.href = '/Interactive-Map.io/index.html';  // Redirect to map
             } else {
                 errorMsg.style.display = 'block';
                 document.getElementById('password').value = '';  // Clear password
@@ -73,7 +73,7 @@
 
         // Auto-redirect if already logged in
         if (localStorage.getItem('loggedInUser')) {
-            window.location.href = 'Interactive-Map.io/index.html';
+            window.location.href = '/Interactive-Map.io/index.html';
         }
     </script>
 </body>
