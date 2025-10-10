@@ -66,7 +66,10 @@
             border: none; border-radius: 4px; 
             cursor: pointer;
         }
-        #save-csv-btn:hover { background: #005a87; }
+        #save-csv-btn:hover, #logout-btn:hover { background: #005a87; }
+        #logout-btn { background: #dc3545; }
+        #logout-btn:hover { background: #c82333; }
+        #save-csv-btn { display: none; }
         
         /* Modal Styles */
         .modal { 
@@ -103,6 +106,7 @@
         <input type="text" id="search" placeholder="Search by title, notes, address, or user..." />
         <button id="add-btn" title="Add New Location">+</button>
         <button id="save-csv-btn" title="Email Updated CSV" onclick="exportCSV()">Send CSV</button>
+		<button id="logout-btn" onclick="logout()">Logout</button>
     </div>
     
     <div id="map"></div>
@@ -515,3 +519,4 @@
 </body>
 
 </html>
+
