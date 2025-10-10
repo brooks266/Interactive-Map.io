@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<link rel="manifest" href="/Interactive-Map.io/manifest.json">
-    <meta name="theme-color" content="#007cba">
     <title>Location Details</title>
+    <!-- PWA Manifest (for consistency if installed) -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#007cba">
     <style>
         body { 
-            margin: 0; 
-            padding: 20px; 
+            margin: 0; padding: 20px; 
             font-family: Arial, sans-serif; 
             max-width: 600px; 
             margin: 0 auto; 
@@ -24,16 +24,23 @@
         h1 { color: #333; text-align: center; }
         .detail { margin-bottom: 15px; }
         .detail strong { color: #007cba; }
-        .back-link { 
+        .back-link, .streetview-link { 
             display: inline-block; 
-            margin-bottom: 20px; 
-            background: #007cba; 
-            color: white; 
+            margin: 10px 5px; 
             padding: 10px 15px; 
             text-decoration: none; 
             border-radius: 4px; 
         }
+        .back-link { 
+            background: #007cba; 
+            color: white; 
+        }
         .back-link:hover { background: #005a87; }
+        .streetview-link { 
+            background: #4285f4; 
+            color: white; 
+        }
+        .streetview-link:hover { background: #3367d6; }
         .error { color: #d00; text-align: center; padding: 20px; }
     </style>
 </head>
@@ -62,14 +69,18 @@
                 if (locationData.address !== 'N/A') {
                     html += `<div class="detail"><strong>Address:</strong><br>${locationData.address}</div>`;
                 }
-				
-				if (locationData.user !== 'N/A') {
+                
+                if (locationData.user !== 'N/A') {
                     html += `<div class="detail"><strong>User:</strong> ${locationData.user}</div>`;
                 }
                 
                 if (locationData.notes !== 'N/A') {
                     html += `<div class="detail"><strong>Notes:</strong><br>${locationData.notes}</div>`;
                 }
+                
+                // Add Google Street View link
+                const streetViewUrl = `http://maps.google.com/maps?q=&layer=c&cbll=${locationData.lat},${locationData.lon}`;
+                html += `<a href="${streetViewUrl}" target="_blank" class="streetview-link">View in Google Street View</a>`;
                 
                 document.getElementById('details').innerHTML = html;
             } catch (error) {
@@ -81,6 +92,4 @@
         }
     </script>
 </body>
-
 </html>
-
