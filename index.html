@@ -126,6 +126,12 @@
         </div>
     </div>
 <script>
+	    // Logout function
+    function logout() {
+        localStorage.removeItem('loggedInUser');
+        currentUser = null;
+        window.location.href = '/Interactive-Map.io/login.html';
+    }
 	// Wait for DOM and deferred scripts to load before initializing
     document.addEventListener('DOMContentLoaded', function() {
     // Global variables
@@ -249,13 +255,6 @@
             const searchTerm = document.getElementById('search').value;
             filterMarkers(searchTerm);
         }, 300);
-    }
-
-    // Logout function
-    function logout() {
-        localStorage.removeItem('loggedInUser');
-        currentUser = null;
-        window.location.href = '/Interactive-Map.io/login.html';
     }
 
     // Toggle creation mode
@@ -495,6 +494,7 @@
 </script>
 </body>
 </html>
+
 
 
 
