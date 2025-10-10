@@ -481,7 +481,7 @@
 	 // PWA: Register Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                navigator.serviceWorker.register('/Interactive-Map.io/sw.js')
                     .then(registration => {
                         console.log('SW registered: ', registration);
                     })
@@ -519,6 +519,7 @@
 </body>
 
 </html>
+
 
 
 
