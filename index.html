@@ -3,7 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Locations Map</title>
+    <title>Interactive Map App</title>
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    <!-- Theme color for PWA (status bar, splash screen) -->
+    <meta name="theme-color" content="#007cba">
+    <!-- Apple-specific for iOS PWA -->
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <!-- Microsoft-specific for Windows PWA -->
+    <meta name="msapplication-TileImage" content="/icon-192.png">
     
     <!-- Leaflet CSS (CDN; download for self-hosting: https://leafletjs.com/download.html) -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
@@ -24,9 +34,6 @@
     
     <!-- PapaParse for CSV parsing (CDN; download: https://www.papaparse.com/docs#download) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
-    
-    <!-- Fuse.js for fuzzy search (CDN; download for self-hosting: https://github.com/krisk/Fuse) -->
-    <script src="https://cdn.jsdelivr.net/npm/fuse.js@6.6.2/dist/fuse.min.js"></script>
     
     <style>
         body { margin: 0; font-family: Arial, sans-serif; }
@@ -84,33 +91,37 @@
         .modal .btn-primary { background: #007cba; color: white; }
         .modal .btn-secondary { background: #6c757d; color: white; }
         .modal .btn-primary:hover, .modal .btn-secondary:hover { opacity: 0.8; }
+		
+		/* Offline message */
+        #offline-message { display: none; position: fixed; top: 20px; right: 20px; background: #ff9800; color: white; padding: 10px; border-radius: 4px; z-index: 1001; }
     </style>
 </head>
 <body>
-    <h2>Interactive Map</h2>
+    <h2>Interactive Map App</h2>
     
     <div id="search-container">
-        <input type="text" id="search" placeholder="Search by title, notes, user, or address" />
+        <input type="text" id="search" placeholder="Search by title, notes, address, or user..." />
         <button id="add-btn" title="Add New Location">+</button>
-        <button id="save-csv-btn" title="Download Updated CSV" onclick="exportCSV()">Submit Location</button>
+        <button id="save-csv-btn" title="Email Updated CSV" onclick="exportCSV()">Send CSV</button>
     </div>
     
     <div id="map"></div>
-
+	
+    <!-- Offline Message -->
+    <div id="offline-message">Offline Mode: Some features limited.</div>
     <!-- Creation Modal -->
     <div id="creation-modal" class="modal">
         <div class="modal-content">
             <h3>Add New Location</h3>
             <p>Clicked at: <span id="click-coords"></span></p>
             <input type="text" id="new-title" placeholder="Title (required)" />
+            <input type="text" id="new-user" placeholder="User (optional)" />
             <textarea id="new-notes" placeholder="Notes (optional)"></textarea>
             <input type="text" id="new-address" placeholder="Address (optional, for search/display)" />
-			<input type="text" id="new-user" placeholder="Username" />
             <button class="btn-primary" onclick="submitNewLocation()">Add Location</button>
             <button class="btn-secondary" onclick="cancelNewLocation()">Cancel</button>
         </div>
     </div>
-
 <script>
     // Global variables
     let map;
@@ -149,7 +160,7 @@
     }
 
     // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
-    map = L.map('map').setView([39.8283, -98.5795], 10);  // US center, zoom level 4
+    map = L.map('map').setView([39.8283, -98.5795], 4);  // US center, zoom level 4
 	
 	// Call to center on user location after map initialization
     centerOnUserLocation();
@@ -456,7 +467,44 @@
 
     // Load the data when the page loads
     loadCSVAndAddMarkers();
+	
+	 // PWA: Register Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch(registrationError => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+        // PWA: Offline Detection
+        window.addEventListener('online', () => {
+            document.getElementById('offline-message').style.display = 'none';
+        });
+        window.addEventListener('offline', () => {
+            document.getElementById('offline-message').style.display = 'block';
+            if (creationMode) {
+                alert('Offline: Cannot add new locations or send email. Reload when online.');
+            }
+        });
+        // PWA: Install Prompt (for browsers that support it)
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            // Optional: Show custom install button
+            // e.g., document.getElementById('install-btn').style.display = 'block';
+        });
+        // Trigger install (e.g., on button click)
+        // window.addEventListener('click', () => {
+        //     if (deferredPrompt) {
+        //         deferredPrompt.prompt();
+        //         deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+        //     }
+        // });
 </script>
 </body>
 </html>
-
