@@ -16,61 +16,140 @@
     <meta name="msapplication-TileImage" content="/Interactive-Map.io/icon-192.png">
     
     <!-- Local Leaflet CSS -->
-       <link rel="stylesheet" href="./leaflet.css">
+    <link rel="stylesheet" href="./leaflet.css">
     
     <!-- Local Leaflet.markercluster CSS -->
-       <link rel="stylesheet" href="./MarkerCluster.css">
-       <link rel="stylesheet" href="./MarkerCluster.Default.css">
+    <link rel="stylesheet" href="./MarkerCluster.css">
+    <link rel="stylesheet" href="./MarkerCluster.Default.css">
     
     <!-- Local Leaflet JS (defer for non-blocking) -->
-       <script src="./leaflet.js"></script>
+    <script src="./leaflet.js" defer></script>
     
     <!-- Local Leaflet.markercluster JS (defer) -->
-       <script src="./leaflet.markercluster.js" defer></script>
+    <script src="./leaflet.markercluster.js" defer></script>
     
     <!-- Local PapaParse JS (defer; or keep CDN if not downloaded) -->
-       <script src="./papaparse.min.js" defer></script>
-       <!-- Alternative: Keep CDN if preferred (small file)
-       <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js" defer></script>
-       -->
+    <script src="./papaparse.min.js" defer></script>
     
     <style>
-        body { margin: 0; font-family: Arial, sans-serif; }
-        #map { margin: 0 auto; height: 80vh; width: 90vw; border: 1px solid #ccc; }
-        h2 { text-align: center; }
-        #search-container { text-align: center; margin-bottom: 10px; }
-        #search { 
-            width: 30vw; 
-            padding: 10px; 
-            font-size: 16px; 
-            border: 1px solid #ccc; 
-            border-radius: 4px; 
-            box-sizing: border-box; 
+        /* App-like: Fullscreen layout */
+        html, body {
+            margin: 0;
+            padding: 10px;  /* Minimal padding for edges/mobile comfort */
+            height: 100vh;
+            overflow: hidden;  /* Prevent scrollbars */
+            font-family: Arial, sans-serif;
         }
-        #search:focus { outline: none; border-color: #007cba; }
-        #add-btn { 
-            width: 40px; height: 40px; 
-            margin-left: 10px; 
-            background: #ccc; color: #333; 
-            border: none; border-radius: 50%; 
-            font-size: 20px; font-weight: bold; 
-            cursor: pointer; vertical-align: middle; 
-        }
-        #add-btn.active { background: #28a745; color: white; }
-        #save-csv-btn { 
-            display: none; 
-            margin-left: 10px; 
-            padding: 10px 15px; 
-            background: #007cba; color: white; 
-            border: none; border-radius: 4px; 
-            cursor: pointer;
-        }
-        #save-csv-btn:hover, #logout-btn:hover { background: #005a87; }
-        #logout-btn { background: #dc3545; }
-        #logout-btn:hover { background: #c82333; }
-        #save-csv-btn { display: none; }
         
-        /* Modal Styles */
+        #map {
+            height: calc(100vh - 20px);  /* Full height minus controls padding */
+            width: 100%;
+            border: none;  /* Remove border for seamless fullscreen */
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Floating Controls: Fixed overlay at top-center */
+        #search-container {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(255, 255, 255, 0.9);  /* Semi-transparent white for visibility over map */
+            padding: 10px 15px;
+            border-radius: 25px;  /* Pill-shaped for modern app feel */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);  /* Subtle shadow */
+            display: flex;
+            align-items: center;
+            gap: 10px;  /* Space between elements */
+            min-width: 300px;  /* Prevent squishing on small screens */
+        }
+        
+        #search {
+            flex: 1;  /* Grow to fill space */
+            padding: 10px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 20px;  /* Rounded input */
+            box-sizing: border-box;
+            min-width: 200px;  /* Ensure usability on mobile */
+        }
+        
+        #search:focus {
+            outline: none;
+            border-color: #007cba;
+            box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
+        }
+        
+        #add-btn {
+            width: 40px;
+            height: 40px;
+            background: #ccc;
+            color: #333;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            flex-shrink: 0;  /* Prevent shrinking */
+        }
+        
+        #add-btn.active {
+            background: #28a745;
+            color: white;
+        }
+        
+        #save-csv-btn, #logout-btn {
+            padding: 10px 15px;
+            background: #007cba;
+            color: white;
+            border: none;
+            border-radius: 20px;  /* Rounded buttons */
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;  /* Prevent text wrap */
+            flex-shrink: 0;
+        }
+        
+        #save-csv-btn:hover, #logout-btn:hover {
+            background: #005a87;
+        }
+        
+        #logout-btn {
+            background: #dc3545;
+        }
+        
+        #logout-btn:hover {
+            background: #c82333;
+        }
+        
+        #save-csv-btn {
+            display: none;
+        }
+        
+        /* Responsive: Stack on very small screens (e.g., mobile portrait) */
+        @media (max-width: 480px) {
+            #search-container {
+                flex-direction: column;
+                gap: 10px;
+                min-width: 280px;
+                padding: 15px;
+                top: 10px;
+            }
+            
+            #search {
+                min-width: auto;
+            }
+            
+            #add-btn, #save-csv-btn, #logout-btn {
+                width: 100%;  /* Full width on stack */
+                border-radius: 20px;
+                text-align: center;
+            }
+        }
+        
+        /* Modal Styles (unchanged, but ensure z-index above controls) */
         .modal { 
             display: none; position: fixed; z-index: 1000; 
             left: 0; top: 0; width: 100%; height: 100%; 
@@ -93,25 +172,30 @@
         .modal .btn-primary { background: #007cba; color: white; }
         .modal .btn-secondary { background: #6c757d; color: white; }
         .modal .btn-primary:hover, .modal .btn-secondary:hover { opacity: 0.8; }
-		
-		/* Offline message */
-        #offline-message { display: none; position: fixed; top: 20px; right: 20px; background: #ff9800; color: white; padding: 10px; border-radius: 4px; z-index: 1001; }
+        
+        /* Offline message (floating, top-right) */
+        #offline-message { 
+            display: none; position: fixed; top: 20px; right: 20px; 
+            background: #ff9800; color: white; padding: 10px; border-radius: 4px; 
+            z-index: 1001; font-size: 14px; 
+        }
     </style>
 </head>
 <body>
-    <h2>Interactive Map App</h2>
+    <!-- No title/header for app-like feel -->
     
     <div id="search-container">
         <input type="text" id="search" placeholder="Search by title, notes, address, or user..." />
         <button id="add-btn" title="Add New Location">+</button>
         <button id="save-csv-btn" title="Email Updated CSV" onclick="exportCSV()">Send CSV</button>
-		<button id="logout-btn" onclick="logout()">Logout</button>
+        <button id="logout-btn" onclick="logout()">Logout</button>
     </div>
     
     <div id="map"></div>
-	
+
     <!-- Offline Message -->
     <div id="offline-message">Offline Mode: Some features limited.</div>
+
     <!-- Creation Modal -->
     <div id="creation-modal" class="modal">
         <div class="modal-content">
@@ -132,154 +216,162 @@
         currentUser = null;
         window.location.href = '/Interactive-Map.io/login.html';
     }
-	// Wait for DOM and deferred scripts to load before initializing
-    document.addEventListener('DOMContentLoaded', function() {
-    // Global variables
-    let map;
-    let markers;  // Cluster group
-    let allMarkers = [];  // Array to store all individual markers for filtering
-    let searchTimeout;  // For debouncing search
-    let creationMode = false;  // Toggle for creation mode
-    let tempMarker = null;  // Temporary marker during creation
-    let clickLat, clickLon;  // Store clicked coords
-    let originalData = [];  // Store original CSV data for export
-    let newMarkers = [];  // Track new markers for export
-    let currentUser = localStorage.getItem('loggedInUser') || null;  // Logged-in user
+        // Wait for DOM and deferred scripts to load before initializing
+        document.addEventListener('DOMContentLoaded', function() {
+            // Global variables
+            let map;
+            let markers;  // Cluster group
+            let allMarkers = [];  // Array to store all individual markers for filtering
+            let searchTimeout;  // For debouncing search
+            let creationMode = false;  // Toggle for creation mode
+            let tempMarker = null;  // Temporary marker during creation
+            let clickLat, clickLon;  // Store clicked coords
+            let originalData = [];  // Store original CSV data for export
+            let newMarkers = [];  // Track new markers for export
+            let currentUser = localStorage.getItem('loggedInUser') || null;  // Logged-in user
 
-    // Session Check: Redirect to login if not authenticated
-    if (!currentUser) {
-        window.location.href = '/Interactive-Map.io/login.html';
-    }
-
-    // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
-    map = L.map('map').setView([39.8283, -98.5795], 4);  // US center, zoom level 4
-    
-    // Add OpenStreetMap tiles (free; self-host tiles if needed via a tile server)
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    }).addTo(map);
-
-    // Create a marker cluster group
-    markers = L.markerClusterGroup({
-        maxClusterRadius: 50,
-        spiderfyOnMaxZoom: true,
-        showCoverageOnHover: true,
-        zoomToBoundsOnClick: true
-    });
-
-    // Function to create popup content (includes address and user if present)
-    function createPopupContent(title, lat, lon, notes, address, user) {
-        let popupContent = `<b>${title}</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
-        if (address) {
-            popupContent += `<br><strong>Address:</strong><br>${address}`;
-        }
-        if (user && user.trim() !== '') {
-            popupContent += `<br><strong>User:</strong> ${user}`;
-        }
-        if (notes) {
-            popupContent += `<br><br><strong>Notes:</strong><br>${notes}`;
-        }
-        // Add View Details link (passes data as URL-encoded JSON, including user)
-        const locationData = {
-            title,
-            lat: lat.toFixed(6),
-            lon: lon.toFixed(6),
-            address: address || 'N/A',
-            notes: notes || 'N/A',
-            user: user || 'N/A'
-        };
-        const encodedData = encodeURIComponent(JSON.stringify(locationData));
-        popupContent += `<br><br><a href="location.html?data=${encodedData}" style="background: #007cba; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; display: inline-block;">View Details</a>`;
-        return popupContent;
-    }
-
-    // Function to add a permanent marker from new data
-    function addPermanentMarker(title, notes, address, user, lat, lon) {
-        const popupContent = createPopupContent(title, lat, lon, notes, address, user);
-        const marker = L.marker([lat, lon]).bindPopup(popupContent);
-        const markerObj = { title, notes, address, user: user || '', lat, lon, marker };
-        allMarkers.push(markerObj);
-        newMarkers.push({ latitude: lat, longitude: lon, title, notes, address, user: user || '' });  // For export
-        markers.addLayer(marker);
-        rebuildClusters();
-        document.getElementById('save-csv-btn').style.display = 'inline-block';
-        console.log(`Added new marker: ${title} by ${user || 'Unknown'} at [${lat.toFixed(6)}, ${lon.toFixed(6)}]`);
-    }
-
-    // Function to rebuild clusters (after adding new markers; no Fuse needed)
-    function rebuildClusters() {
-        // Re-apply current search filter if active
-        const currentSearch = document.getElementById('search').value;
-        if (currentSearch) {
-            filterMarkers(currentSearch);
-        } else {
-            // Ensure all are visible
-            markers.clearLayers();
-            allMarkers.forEach(markerObj => markers.addLayer(markerObj.marker));
-        }
-    }
-
-    // Function to filter and update visible markers based on exact substring search (case-insensitive)
-    function filterMarkers(searchTerm) {
-        const term = searchTerm.trim().toLowerCase();
-        markers.clearLayers();
-        let visibleCount = 0;
-        
-        if (term === '') {
-            allMarkers.forEach(markerObj => {
-                markers.addLayer(markerObj.marker);
-                visibleCount++;
-            });
-        } else {
-            allMarkers.forEach(markerObj => {
-                const titleMatch = markerObj.title.toLowerCase().includes(term);
-                const notesMatch = markerObj.notes.toLowerCase().includes(term);
-                const addressMatch = (markerObj.address || '').toLowerCase().includes(term);
-                const userMatch = (markerObj.user || '').toLowerCase().includes(term);
-                
-                if (titleMatch || notesMatch || addressMatch || userMatch) {
-                    markers.addLayer(markerObj.marker);
-                    visibleCount++;
-                    console.log(`Match: "${markerObj.title}" (via ${titleMatch ? 'title' : notesMatch ? 'notes' : addressMatch ? 'address' : 'user'})`);
-                }
-            });
-        }
-        
-        console.log(`Showing ${visibleCount} markers (search: "${searchTerm}")`);
-    }
-
-    // Debounced search handler
-    function handleSearch() {
-        if (searchTimeout) clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            const searchTerm = document.getElementById('search').value;
-            filterMarkers(searchTerm);
-        }, 300);
-    }
-
-    // Toggle creation mode
-    function toggleCreationMode() {
-        creationMode = !creationMode;
-        const addBtn = document.getElementById('add-btn');
-        addBtn.classList.toggle('active', creationMode);
-        const searchInput = document.getElementById('search');
-        searchInput.disabled = creationMode;
-        
-        if (creationMode) {
-            map.on('click', handleMapClick);
-            console.log('Creation mode: ON - Click map to add pin');
-        } else {
-            map.off('click', handleMapClick);
-            if (tempMarker) {
-                map.removeLayer(tempMarker);
-                tempMarker = null;
+            // Session Check: Redirect to login if not authenticated
+            if (!currentUser) {
+                window.location.href = '/login.html';
+                return;  // Exit early if not logged in
             }
-            searchInput.disabled = false;
-            const currentSearch = searchInput.value;
-            if (currentSearch) filterMarkers(currentSearch);
-            console.log('Creation mode: OFF');
-        }
-    }
+
+            // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
+            map = L.map('map').setView([39.8283, -98.5795], 4);  // US center, zoom level 4
+            
+            // Add OpenStreetMap tiles (free; self-host tiles if needed via a tile server)
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+
+            // Create a marker cluster group
+            markers = L.markerClusterGroup({
+                maxClusterRadius: 50,
+                spiderfyOnMaxZoom: true,
+                showCoverageOnHover: true,
+                zoomToBoundsOnClick: true
+            });
+
+            // Function to create popup content (includes address and user if present)
+            function createPopupContent(title, lat, lon, notes, address, user) {
+                let popupContent = `<b>${title}</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
+                if (address) {
+                    popupContent += `<br><strong>Address:</strong><br>${address}`;
+                }
+                if (user && user.trim() !== '') {
+                    popupContent += `<br><strong>User:</strong> ${user}`;
+                }
+                if (notes) {
+                    popupContent += `<br><br><strong>Notes:</strong><br>${notes}`;
+                }
+                // Add View Details link (passes data as URL-encoded JSON, including user)
+                const locationData = {
+                    title,
+                    lat: lat.toFixed(6),
+                    lon: lon.toFixed(6),
+                    address: address || 'N/A',
+                    notes: notes || 'N/A',
+                    user: user || 'N/A'
+                };
+                const encodedData = encodeURIComponent(JSON.stringify(locationData));
+                popupContent += `<br><br><a href="location.html?data=${encodedData}" style="background: #007cba; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; display: inline-block;">View Details</a>`;
+                return popupContent;
+            }
+
+            // Function to add a permanent marker from new data
+            function addPermanentMarker(title, notes, address, user, lat, lon) {
+                const popupContent = createPopupContent(title, lat, lon, notes, address, user);
+                const marker = L.marker([lat, lon]).bindPopup(popupContent);
+                const markerObj = { title, notes, address, user: user || '', lat, lon, marker };
+                allMarkers.push(markerObj);
+                newMarkers.push({ latitude: lat, longitude: lon, title, notes, address, user: user || '' });  // For export
+                markers.addLayer(marker);
+                rebuildClusters();
+                document.getElementById('save-csv-btn').style.display = 'inline-block';
+                console.log(`Added new marker: ${title} by ${user || 'Unknown'} at [${lat.toFixed(6)}, ${lon.toFixed(6)}]`);
+            }
+
+            // Function to rebuild clusters (after adding new markers; no Fuse needed)
+            function rebuildClusters() {
+                // Re-apply current search filter if active
+                const currentSearch = document.getElementById('search').value;
+                if (currentSearch) {
+                    filterMarkers(currentSearch);
+                } else {
+                    // Ensure all are visible
+                    markers.clearLayers();
+                    allMarkers.forEach(markerObj => markers.addLayer(markerObj.marker));
+                }
+            }
+
+            // Function to filter and update visible markers based on exact substring search (case-insensitive)
+            function filterMarkers(searchTerm) {
+                const term = searchTerm.trim().toLowerCase();
+                markers.clearLayers();
+                let visibleCount = 0;
+                
+                if (term === '') {
+                    allMarkers.forEach(markerObj => {
+                        markers.addLayer(markerObj.marker);
+                        visibleCount++;
+                    });
+                } else {
+                    allMarkers.forEach(markerObj => {
+                        const titleMatch = markerObj.title.toLowerCase().includes(term);
+                        const notesMatch = markerObj.notes.toLowerCase().includes(term);
+                        const addressMatch = (markerObj.address || '').toLowerCase().includes(term);
+                        const userMatch = (markerObj.user || '').toLowerCase().includes(term);
+                        
+                        if (titleMatch || notesMatch || addressMatch || userMatch) {
+                            markers.addLayer(markerObj.marker);
+                            visibleCount++;
+                            console.log(`Match: "${markerObj.title}" (via ${titleMatch ? 'title' : notesMatch ? 'notes' : addressMatch ? 'address' : 'user'})`);
+                        }
+                    });
+                }
+                
+                console.log(`Showing ${visibleCount} markers (search: "${searchTerm}")`);
+            }
+
+            // Debounced search handler
+            function handleSearch() {
+                if (searchTimeout) clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    const searchTerm = document.getElementById('search').value;
+                    filterMarkers(searchTerm);
+                }, 300);
+            }
+
+            // Logout function
+            function logout() {
+                localStorage.removeItem('loggedInUser');
+                currentUser = null;
+                window.location.href = '/login.html';
+            }
+
+            // Toggle creation mode
+            function toggleCreationMode() {
+                creationMode = !creationMode;
+                const addBtn = document.getElementById('add-btn');
+                addBtn.classList.toggle('active', creationMode);
+                const searchInput = document.getElementById('search');
+                searchInput.disabled = creationMode;
+                
+                if (creationMode) {
+                    map.on('click', handleMapClick);
+                    console.log('Creation mode: ON - Click map to add pin');
+                } else {
+                    map.off('click', handleMapClick);
+                    if (tempMarker) {
+                        map.removeLayer(tempMarker);
+                        tempMarker = null;
+                    }
+                    searchInput.disabled = false;
+                    const currentSearch = searchInput.value;
+                    if (currentSearch) filterMarkers(currentSearch);
+                    console.log('Creation mode: OFF');
+                }
+            }
 
     // Handle map click in creation mode
     function handleMapClick(e) {
@@ -494,6 +586,7 @@
 </script>
 </body>
 </html>
+
 
 
 
