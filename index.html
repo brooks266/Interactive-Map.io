@@ -137,61 +137,15 @@
     let clickLat, clickLon;  // Store clicked coords
     let originalData = [];  // Store original CSV data for export
     let newMarkers = [];  // Track new markers for export
-	let currentUser = localStorage.getItem('loggedInUser') || null;  // Logged-in user
+    let currentUser = localStorage.getItem('loggedInUser') || null;  // Logged-in user
 
-	// Session Check: Redirect to login if not authenticated
+    // Session Check: Redirect to login if not authenticated
     if (!currentUser) {
-        window.location.href = '/Interactive-Map.io/login.html';
-    }
-	
-	// Function to center map on user's geolocation
-    function centerOnUserLocation() {
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(
-                function(position) {
-                    const userLat = position.coords.latitude;
-                    const userLon = position.coords.longitude;
-                    map.setView([userLat, userLon], 12);  // Center on user with city-level zoom (adjust as needed)
-                    console.log(`Map centered on user location: [${userLat.toFixed(6)}, ${userLon.toFixed(6)}]`);
-                },
-                function(error) {
-                    console.warn('Geolocation failed or denied. Using default US view.', error);
-                    // Fallback: keep the default US center
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 300000  // 5 minutes cache
-                }
-            );
-        } else {
-            console.warn('Geolocation not supported by this browser. Using default US view.');
-        }
+        window.location.href = '/login.html';
     }
 
     // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
     map = L.map('map').setView([39.8283, -98.5795], 4);  // US center, zoom level 4
-	
-	// Call to center on user location after map initialization
-    centerOnUserLocation();
-	
-	// Define base layers
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    });
-    
-    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-    });
-    
-    // Add default layer (OSM) to map
-    osm.addTo(map);
-    // Add layer control in bottom left
-    const baseMaps = {
-        "OpenStreetMap": osm,
-        "Satellite": satellite
-    };
-    L.control.layers(baseMaps, null, { position: 'topright' }).addTo(map);
     
     // Add OpenStreetMap tiles (free; self-host tiles if needed via a tile server)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -212,7 +166,7 @@
         if (address) {
             popupContent += `<br><strong>Address:</strong><br>${address}`;
         }
-        if (user) {
+        if (user && user.trim() !== '') {
             popupContent += `<br><strong>User:</strong> ${user}`;
         }
         if (notes) {
@@ -236,9 +190,9 @@
     function addPermanentMarker(title, notes, address, user, lat, lon) {
         const popupContent = createPopupContent(title, lat, lon, notes, address, user);
         const marker = L.marker([lat, lon]).bindPopup(popupContent);
-        const markerObj = { title, notes, address, user, lat, lon, marker };
+        const markerObj = { title, notes, address, user: user || '', lat, lon, marker };
         allMarkers.push(markerObj);
-        newMarkers.push({ latitude: lat, longitude: lon, title, notes, address, user});  // For export
+        newMarkers.push({ latitude: lat, longitude: lon, title, notes, address, user: user || '' });  // For export
         markers.addLayer(marker);
         rebuildClusters();
         document.getElementById('save-csv-btn').style.display = 'inline-block';
@@ -279,7 +233,7 @@
                 if (titleMatch || notesMatch || addressMatch || userMatch) {
                     markers.addLayer(markerObj.marker);
                     visibleCount++;
-                    //console.log(`Match: "${markerObj.title}" (via ${titleMatch ? 'title' : notesMatch ? 'notes' : addressMatch ? 'address' : userMatch ? 'user'})`);
+                    console.log(`Match: "${markerObj.title}" (via ${titleMatch ? 'title' : notesMatch ? 'notes' : addressMatch ? 'address' : 'user'})`);
                 }
             });
         }
@@ -294,6 +248,13 @@
             const searchTerm = document.getElementById('search').value;
             filterMarkers(searchTerm);
         }, 300);
+    }
+
+    // Logout function
+    function logout() {
+        localStorage.removeItem('loggedInUser');
+        currentUser = null;
+        window.location.href = '/login.html';
     }
 
     // Toggle creation mode
@@ -346,6 +307,12 @@
         document.getElementById('click-coords').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
         document.getElementById('creation-modal').style.display = 'block';
         document.getElementById('new-title').focus();
+        
+        // Pre-fill user field with current logged-in user (editable)
+        const userInput = document.getElementById('new-user');
+        if (userInput && currentUser) {
+            userInput.value = currentUser;
+        }
     }
 
     // Submit new location
@@ -353,7 +320,8 @@
         const title = document.getElementById('new-title').value.trim();
         const notes = document.getElementById('new-notes').value.trim();
         const address = document.getElementById('new-address').value.trim();
-        const user = document.getElementById('new-user').value.trim();
+        const newUserInput = document.getElementById('new-user');
+        const user = newUserInput ? newUserInput.value.trim() : '';
         
         if (!title) {
             alert('Title is required!');
@@ -367,7 +335,9 @@
         document.getElementById('new-title').value = '';
         document.getElementById('new-notes').value = '';
         document.getElementById('new-address').value = '';
-		document.getElementById('new-user').value = '';
+        if (newUserInput) {
+            newUserInput.value = '';
+        }
         document.getElementById('creation-modal').style.display = 'none';
         
         // Remove temp marker
@@ -390,7 +360,10 @@
         document.getElementById('new-title').value = '';
         document.getElementById('new-notes').value = '';
         document.getElementById('new-address').value = '';
-        document.getElementById('new-user').value = '';
+        const newUserInput = document.getElementById('new-user');
+        if (newUserInput) {
+            newUserInput.value = '';
+        }
     }
 
     // Export updated CSV via email (original + new markers, including user)
@@ -477,48 +450,50 @@
 
     // Load the data when the page loads
     loadCSVAndAddMarkers();
-	
-	 // PWA: Register Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/Interactive-Map.io/sw.js')
-                    .then(registration => {
-                        console.log('SW registered: ', registration);
-                    })
-                    .catch(registrationError => {
-                        console.log('SW registration failed: ', registrationError);
-                    });
-            });
+
+    // PWA: Register Service Worker
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+                .then(registration => {
+                    console.log('SW registered: ', registration);
+                })
+                .catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                });
+        });
+    }
+
+    // PWA: Offline Detection
+    window.addEventListener('online', () => {
+        document.getElementById('offline-message').style.display = 'none';
+    });
+    window.addEventListener('offline', () => {
+        document.getElementById('offline-message').style.display = 'block';
+        if (creationMode) {
+            alert('Offline: Cannot add new locations or send email. Reload when online.');
         }
-        // PWA: Offline Detection
-        window.addEventListener('online', () => {
-            document.getElementById('offline-message').style.display = 'none';
-        });
-        window.addEventListener('offline', () => {
-            document.getElementById('offline-message').style.display = 'block';
-            if (creationMode) {
-                alert('Offline: Cannot add new locations or send email. Reload when online.');
-            }
-        });
-        // PWA: Install Prompt (for browsers that support it)
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            // Optional: Show custom install button
-            // e.g., document.getElementById('install-btn').style.display = 'block';
-        });
-        // Trigger install (e.g., on button click)
-        // window.addEventListener('click', () => {
-        //     if (deferredPrompt) {
-        //         deferredPrompt.prompt();
-        //         deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-        //     }
-        // });
+    });
+
+    // PWA: Install Prompt (for browsers that support it)
+    let deferredPrompt;
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        // Optional: Show custom install button
+        // e.g., document.getElementById('install-btn').style.display = 'block';
+    });
+    // Trigger install (e.g., on button click)
+    // window.addEventListener('click', () => {
+    //     if (deferredPrompt) {
+    //         deferredPrompt.prompt();
+    //         deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
+    //     }
+    // });
 </script>
 </body>
-
 </html>
+
 
 
 
