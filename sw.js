@@ -1,9 +1,9 @@
 const CACHE_NAME = 'map-app-v1';
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/location.html',  // If using details page
-  '/data.csv',
+  '/Interactive-Map.io/',
+  '/Interactive-Map.io/index.html',
+  '/Interactive-Map.io/location.html',  // If using details page
+  '/Interactive-Map.io/data.csv',
   // Cache CDNs (for offline; they may update, so version CACHE_NAME when updating)
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
   'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
@@ -71,3 +71,4 @@ self.addEventListener('fetch', event => {
       })
   );
 });
+
