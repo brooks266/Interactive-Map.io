@@ -13,6 +13,10 @@
      '/Interactive-Map.io/leaflet.js',
      '/Interactive-Map.io/leaflet.markercluster.js',
      '/Interactive-Map.io/papaparse.min.js',  // If downloaded
+      // Icons (new: cache Leaflet markers)
+     '/Interactive-Map.io/images/marker-icon.png',
+     '/Interactive-Map.io/images/marker-icon-2x.png',
+     '/Interactive-Map.io/images/marker-shadow.png',
      // Icons
      '/Interactive-Map.io/icon-192.png',
      '/Interactive-Map.io/icon-512.png'
@@ -77,3 +81,4 @@
      );
    });
    
+
