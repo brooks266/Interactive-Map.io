@@ -2,7 +2,7 @@
   "name": "Interactive Map App",
   "short_name": "Map App",
   "description": "An interactive map for adding and searching locations from CSV.",
-  "start_url": "/Interactive-Map.io/",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#007cba",
@@ -22,5 +22,6 @@
     }
   ]
 }
+
 
 
