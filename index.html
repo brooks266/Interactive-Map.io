@@ -478,7 +478,7 @@
 
             // Function to load and parse CSV, then add markers to cluster
             function loadCSVAndAddMarkers() {
-        Papa.parse('data.csv', {
+        Papa.parse('/Interactive-Map.io/data.csv', {
             download: true,
             header: true,
             complete: function(results) {
@@ -574,6 +574,7 @@
 </script>
 </body>
 </html>
+
 
 
 
