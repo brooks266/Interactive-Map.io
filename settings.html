@@ -54,7 +54,7 @@
         .container { 
             flex: 1;
             max-width: 600px; 
-            width: 90%;
+            width: 100%;
             margin: 0 auto; 
             padding: 30px 20px;
         }
@@ -239,13 +239,16 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div class="profile-card">
-            <a href="index.html" class="back-btn">← Back to Map</a>
+    <div class="header">
+        <a href="/Interactive-Map.io/index.html" class="back-btn">← Back to Map</a>
+        <h1>Profile & Settings</h1>
+    </div>
     
-            <div id="success-msg" class="success-message"></div>
-            <div id="error-msg" class="error-message"></div>
+    <div class="container">
+        <div id="success-msg" class="success-message"></div>
+        <div id="error-msg" class="error-message"></div>
         
+        <div class="profile-card">
             <div class="profile-header">
                 <div class="profile-icon" id="profile-icon">A</div>
                 <h2 class="username-display" id="username-display">Loading...</h2>
@@ -274,26 +277,31 @@
                 
                 <div class="btn-container">
                     <button type="submit" class="btn btn-primary" id="save-btn">Save Changes</button>
-                    <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+                    <button type="button" class="btn btn-secondary" id="reset-btn">Reset</button>
                 </div>
             </form>
         </div>
         
         <div class="logout-section">
             <p>Ready to leave?</p>
-            <button class="btn-logout" onclick="logout()">Logout</button>
+            <button class="btn-logout" id="logout-btn">Logout</button>
         </div>
     </div>
 
     <script>
-        let currentUser = localStorage.getItem('loggedInUser');
-        let usersData = [];
-        let currentUserData = null;
+        (function() {
+            'use strict';
+            
+            const currentUser = localStorage.getItem('loggedInUser');
+            let usersData = [];
+            let currentUserData = null;
+            const MESSAGE_TIMEOUT = 5000;
 
-        // Session Check: Redirect to login if not authenticated
-        if (!currentUser) {
-            window.location.href = '/Interactive-Map.io/login.html';
-        }
+            // Session Check: Redirect to login if not authenticated
+            if (!currentUser) {
+                window.location.href = '/Interactive-Map.io/login.html';
+                return;
+            }
 
         // Load users from CSV
         function loadUsersFromCSV() {
@@ -386,55 +394,59 @@
             loadUserProfile();
         }
 
-        // Reset form to original values
-        function resetForm() {
-            loadUserProfile();
-            showSuccess('Form reset to saved values.');
-        }
-
-        // Logout function
-        function logout() {
-            if (confirm('Are you sure you want to logout?')) {
-                localStorage.removeItem('loggedInUser');
-                window.location.href = '/Interactive-Map.io/login.html';
+            // Reset form to original values
+            function resetForm() {
+                loadUserProfile();
+                showSuccess('Form reset to saved values.');
             }
-        }
 
-        // Email validation
-        function isValidEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
-        }
+            // Logout function
+            function logout() {
+                if (confirm('Are you sure you want to logout?')) {
+                    localStorage.removeItem('loggedInUser');
+                    window.location.href = '/Interactive-Map.io/login.html';
+                }
+            }
 
-        // Show success message
-        function showSuccess(message) {
-            const successMsg = document.getElementById('success-msg');
-            const errorMsg = document.getElementById('error-msg');
-            errorMsg.style.display = 'none';
-            successMsg.textContent = message;
-            successMsg.style.display = 'block';
-            setTimeout(() => {
+            // Email validation
+            function isValidEmail(email) {
+                return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+            }
+
+            // Show message helper
+            function showMessage(type, message) {
+                const successMsg = document.getElementById('success-msg');
+                const errorMsg = document.getElementById('error-msg');
+                
                 successMsg.style.display = 'none';
-            }, 5000);
-        }
-
-        // Show error message
-        function showError(message) {
-            const successMsg = document.getElementById('success-msg');
-            const errorMsg = document.getElementById('error-msg');
-            successMsg.style.display = 'none';
-            errorMsg.textContent = message;
-            errorMsg.style.display = 'block';
-            setTimeout(() => {
                 errorMsg.style.display = 'none';
-            }, 5000);
-        }
+                
+                const targetMsg = type === 'success' ? successMsg : errorMsg;
+                targetMsg.textContent = message;
+                targetMsg.style.display = 'block';
+                
+                setTimeout(() => {
+                    targetMsg.style.display = 'none';
+                }, MESSAGE_TIMEOUT);
+            }
 
-        // Initialize on page load
-        loadUsersFromCSV();
+            // Show success message
+            function showSuccess(message) {
+                showMessage('success', message);
+            }
+
+            // Show error message
+            function showError(message) {
+                showMessage('error', message);
+            }
+
+            // Event listeners
+            document.getElementById('reset-btn').addEventListener('click', resetForm);
+            document.getElementById('logout-btn').addEventListener('click', logout);
+
+            // Initialize on page load
+            loadUsersFromCSV();
+        })();
     </script>
 </body>
 </html>
-
-
-

@@ -92,7 +92,7 @@
             font-size: 20px;
             font-weight: bold;
             cursor: pointer;
-            /*flex-shrink: 0;  /* Prevent shrinking */
+            flex-shrink: 0;
         }
         
         #add-btn.active {
@@ -105,11 +105,11 @@
             background: #007cba;
             color: white;
             border: none;
-            border-radius: 20px;  /* Rounded buttons */
+            border-radius: 20px;
             cursor: pointer;
             font-size: 14px;
-            white-space: nowrap;  /* Prevent text wrap */
-            /*flex-shrink: 0; */
+            white-space: nowrap;
+            flex-shrink: 0;
         }
         
         #save-csv-btn:hover, #settings-btn:hover {
@@ -131,7 +131,7 @@
         /* Responsive: Stack on very small screens (e.g., mobile portrait) */
         @media (max-width: 480px) {
             #search-container {
-				display: flex;
+                display: flex;
                 flex-direction: column;
                 gap: 10px;
                 min-width: 260px;
@@ -139,13 +139,13 @@
                 bottom: 10px;
             }
 
-			#stacker {
-				display: flex;
-				flex-direction: row;
+            #stacker {
+                display: flex;
+                flex-direction: row;
                 min-width: 220px;
-				padding: 15px;
-				gap: 10px;
-			}
+                padding: 15px;
+                gap: 10px;
+            }
             
             #search {
                 min-width: auto;
@@ -195,11 +195,11 @@
     
     <div id="search-container">
         <input type="text" id="search" placeholder="Search by title, notes, address, or user..." />
-		<div id="stacker">
-        	<button id="add-btn" title="Add New Location">+</button>
-        	<button id="save-csv-btn" title="Email Updated CSV" onclick="exportCSV()">Send CSV</button>
-        <button id="settings-btn" onclick="goToSettings()">Settings</button>
-		</div>
+        <div id="stacker">
+            <button id="add-btn" title="Add New Location">+</button>
+            <button id="save-csv-btn" title="Email Updated CSV">Send CSV</button>
+            <button id="settings-btn">Settings</button>
+        </div>
     </div>
     
     <div id="map"></div>
@@ -216,17 +216,13 @@
             <input type="text" id="new-user" placeholder="User (optional)" />
             <textarea id="new-notes" placeholder="Notes (optional)"></textarea>
             <input type="text" id="new-address" placeholder="Address (optional, for search/display)" />
-            <button class="btn-primary" onclick="submitNewLocation()">Add Location</button>
-            <button class="btn-secondary" onclick="cancelNewLocation()">Cancel</button>
+            <button class="btn-primary" id="submit-location-btn">Add Location</button>
+            <button class="btn-secondary" id="cancel-location-btn">Cancel</button>
         </div>
     </div>
 <script>
-	    // Navigate to settings page
-    function goToSettings() {
-        window.location.href = '/Interactive-Map.io/settings.html';
-    }
-        // Wait for DOM and deferred scripts to load before initializing
-        document.addEventListener('DOMContentLoaded', function() {
+    // Wait for DOM and deferred scripts to load before initializing
+    document.addEventListener('DOMContentLoaded', function() {
             // Global variables
             let map;
             let markers;  // Cluster group
@@ -351,11 +347,6 @@
                 }, 300);
             }
 
-            // Navigate to settings page
-            function goToSettings() {
-                window.location.href = '/Interactive-Map.io/settings.html';
-            }
-
             // Toggle creation mode
             function toggleCreationMode() {
                 creationMode = !creationMode;
@@ -380,8 +371,8 @@
                 }
             }
 
-    // Handle map click in creation mode
-    function handleMapClick(e) {
+            // Handle map click in creation mode
+            function handleMapClick(e) {
         const lat = e.latlng.lat;
         const lon = e.latlng.lng;
         clickLat = lat;
@@ -412,10 +403,10 @@
         if (userInput && currentUser) {
             userInput.value = currentUser;
         }
-    }
+            }
 
-    // Submit new location
-    function submitNewLocation() {
+            // Submit new location
+            function submitNewLocation() {
         const title = document.getElementById('new-title').value.trim();
         const notes = document.getElementById('new-notes').value.trim();
         const address = document.getElementById('new-address').value.trim();
@@ -447,10 +438,10 @@
         
         // Exit creation mode after add
         toggleCreationMode();
-    }
+            }
 
-    // Cancel new location
-    function cancelNewLocation() {
+            // Cancel new location
+            function cancelNewLocation() {
         if (tempMarker) {
             map.removeLayer(tempMarker);
             tempMarker = null;
@@ -463,10 +454,10 @@
         if (newUserInput) {
             newUserInput.value = '';
         }
-    }
+            }
 
-    // Export updated CSV via email (original + new markers, including user)
-    function exportCSV() {
+            // Export updated CSV via email (original + new markers, including user)
+            function exportCSV() {
         let csvContent = 'latitude,longitude,title,notes,address,user\n';
         
         // Add original data
@@ -486,10 +477,10 @@
         window.location.href = mailtoLink;
         
         console.log('Email client opened with CSV content. Please send the email.');
-    }
+            }
 
-    // Function to load and parse CSV, then add markers to cluster (synchronous; requires lat/lon)
-    function loadCSVAndAddMarkers() {
+            // Function to load and parse CSV, then add markers to cluster
+            function loadCSVAndAddMarkers() {
         Papa.parse('data.csv', {
             download: true,
             header: true,
@@ -541,55 +532,48 @@
                 console.error('Error loading CSV:', error);
             }
         });
-    }
+            }
 
-    // Event listeners
-    document.getElementById('add-btn').addEventListener('click', toggleCreationMode);
-    document.getElementById('search').addEventListener('input', handleSearch);
+            // Event listeners
+            document.getElementById('add-btn').addEventListener('click', toggleCreationMode);
+            document.getElementById('search').addEventListener('input', handleSearch);
+            document.getElementById('save-csv-btn').addEventListener('click', exportCSV);
+            document.getElementById('settings-btn').addEventListener('click', () => {
+                window.location.href = '/Interactive-Map.io/settings.html';
+            });
+            document.getElementById('submit-location-btn').addEventListener('click', submitNewLocation);
+            document.getElementById('cancel-location-btn').addEventListener('click', cancelNewLocation);
 
-    // Load the data when the page loads
-    loadCSVAndAddMarkers();
+            // Load the data when the page loads
+            loadCSVAndAddMarkers();
 
-    // PWA: Register Service Worker
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/Interactive-Map.io/sw.js')
-                .then(registration => {
-                    console.log('SW registered: ', registration);
-                })
-                .catch(registrationError => {
-                    console.log('SW registration failed: ', registrationError);
+            // PWA: Register Service Worker
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/Interactive-Map.io/sw.js')
+                        .then(registration => console.log('SW registered: ', registration))
+                        .catch(error => console.log('SW registration failed: ', error));
                 });
+            }
+
+            // PWA: Offline Detection
+            window.addEventListener('online', () => {
+                document.getElementById('offline-message').style.display = 'none';
+            });
+            window.addEventListener('offline', () => {
+                document.getElementById('offline-message').style.display = 'block';
+                if (creationMode) {
+                    alert('Offline: Cannot add new locations or send email. Reload when online.');
+                }
+            });
+
+            // PWA: Install Prompt
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+            });
         });
-    }
-
-    // PWA: Offline Detection
-    window.addEventListener('online', () => {
-        document.getElementById('offline-message').style.display = 'none';
-    });
-    window.addEventListener('offline', () => {
-        document.getElementById('offline-message').style.display = 'block';
-        if (creationMode) {
-            alert('Offline: Cannot add new locations or send email. Reload when online.');
-        }
-    });
-
-    // PWA: Install Prompt (for browsers that support it)
-    let deferredPrompt;
-    window.addEventListener('beforeinstallprompt', (e) => {
-        e.preventDefault();
-        deferredPrompt = e;
-        // Optional: Show custom install button
-        // e.g., document.getElementById('install-btn').style.display = 'block';
-    });
-    // Trigger install (e.g., on button click)
-    // window.addEventListener('click', () => {
-    //     if (deferredPrompt) {
-    //         deferredPrompt.prompt();
-    //         deferredPrompt.userChoice.then(() => { deferredPrompt = null; });
-    //     }
-    // });
-	});
 </script>
 </body>
 </html>
