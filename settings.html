@@ -397,52 +397,116 @@
             showLoading(true);
             
             try {
-                const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+                const userDocRef = doc(db, 'users', currentUser.uid);
+                const userDoc = await getDoc(userDocRef);
                 
                 if (userDoc.exists()) {
                     currentUserData = userDoc.data();
                     originalData = { ...currentUserData };
+                } else {
+                    // User profile doesn't exist - create a default one
+                    console.log('User profile not found, creating default profile...');
+                    currentUserData = {
+                        displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+                        email: currentUser.email || '',
+                        bio: '',
+                        createdAt: serverTimestamp(),
+                        lastLogin: serverTimestamp()
+                    };
                     
-                    // Populate form
-                    document.getElementById('displayName').value = currentUserData.displayName || '';
-                    document.getElementById('email').value = currentUser.email || '';
-                    document.getElementById('bio').value = currentUserData.bio || '';
+                    try {
+                        await setDoc(userDocRef, currentUserData);
+                        console.log('Default user profile created successfully');
+                    } catch (createError) {
+                        console.error('Error creating default profile:', createError);
+                        showError('Failed to create user profile. Some features may be limited.');
+                    }
                     
-                    // Update display
-                    const displayName = currentUserData.displayName || currentUser.email;
-                    document.getElementById('username-display').textContent = displayName;
-                    
-                    // Email verification status
-                    const emailDisplay = document.getElementById('email-display');
-                    emailDisplay.innerHTML = currentUser.email;
-                    
-                    if (currentUser.emailVerified) {
-                        emailDisplay.innerHTML += ' <span class="email-verified">✓ Verified</span>';
-                    } else {
-                        emailDisplay.innerHTML += ' <span class="email-unverified">⚠ Not Verified</span>';
+                    originalData = { ...currentUserData };
+                }
+                
+                // Populate form with safe fallbacks
+                document.getElementById('displayName').value = currentUserData.displayName || '';
+                document.getElementById('email').value = currentUser.email || '';
+                document.getElementById('bio').value = currentUserData.bio || '';
+                
+                // Update display
+                const displayName = currentUserData.displayName || currentUser.email || 'User';
+                document.getElementById('username-display').textContent = displayName;
+                
+                // Email verification status
+                const emailDisplay = document.getElementById('email-display');
+                emailDisplay.innerHTML = currentUser.email || 'No email';
+                
+                if (currentUser.emailVerified) {
+                    emailDisplay.innerHTML += ' <span class="email-verified">✓ Verified</span>';
+                } else {
+                    emailDisplay.innerHTML += ' <span class="email-unverified">⚠ Not Verified</span>';
+                    if (currentUser.email) {
                         emailDisplay.innerHTML += ' <a href="#" onclick="window.resendVerification(); return false;" style="font-size: 12px; margin-left: 5px;">Resend</a>';
                     }
-                    
-                    // Update profile icon
-                    const firstLetter = displayName.charAt(0).toUpperCase();
-                    document.getElementById('profile-icon').textContent = firstLetter;
-                    
-                    // Format dates
-                    if (currentUserData.createdAt) {
-                        const createdDate = currentUserData.createdAt.toDate();
-                        document.getElementById('account-created').textContent = formatDate(createdDate);
-                    }
-                    
-                    if (currentUserData.lastLogin) {
-                        const lastLoginDate = currentUserData.lastLogin.toDate();
-                        document.getElementById('last-login').textContent = formatDate(lastLoginDate);
-                    }
-                } else {
-                    showError('User profile not found.');
                 }
+                
+                // Update profile icon
+                const firstLetter = displayName.charAt(0).toUpperCase();
+                document.getElementById('profile-icon').textContent = firstLetter;
+                
+                // Format dates with proper null checks
+                try {
+                    if (currentUserData.createdAt) {
+                        // Check if it's a Firestore Timestamp object
+                        if (currentUserData.createdAt.toDate && typeof currentUserData.createdAt.toDate === 'function') {
+                            const createdDate = currentUserData.createdAt.toDate();
+                            document.getElementById('account-created').textContent = formatDate(createdDate);
+                        } else if (currentUserData.createdAt instanceof Date) {
+                            document.getElementById('account-created').textContent = formatDate(currentUserData.createdAt);
+                        } else {
+                            document.getElementById('account-created').textContent = 'Recently';
+                        }
+                    } else {
+                        document.getElementById('account-created').textContent = 'Recently';
+                    }
+                } catch (dateError) {
+                    console.error('Error formatting createdAt date:', dateError);
+                    document.getElementById('account-created').textContent = 'Recently';
+                }
+                
+                try {
+                    if (currentUserData.lastLogin) {
+                        // Check if it's a Firestore Timestamp object
+                        if (currentUserData.lastLogin.toDate && typeof currentUserData.lastLogin.toDate === 'function') {
+                            const lastLoginDate = currentUserData.lastLogin.toDate();
+                            document.getElementById('last-login').textContent = formatDate(lastLoginDate);
+                        } else if (currentUserData.lastLogin instanceof Date) {
+                            document.getElementById('last-login').textContent = formatDate(currentUserData.lastLogin);
+                        } else {
+                            document.getElementById('last-login').textContent = 'Just now';
+                        }
+                    } else {
+                        document.getElementById('last-login').textContent = 'Just now';
+                    }
+                } catch (dateError) {
+                    console.error('Error formatting lastLogin date:', dateError);
+                    document.getElementById('last-login').textContent = 'Just now';
+                }
+                
             } catch (error) {
                 console.error('Error loading profile:', error);
                 showError('Failed to load profile. Please try again.');
+                
+                // Set minimal fallback data to prevent further errors
+                currentUserData = {
+                    displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+                    email: currentUser.email || '',
+                    bio: ''
+                };
+                originalData = { ...currentUserData };
+                
+                // Update UI with fallback data
+                document.getElementById('displayName').value = currentUserData.displayName;
+                document.getElementById('email').value = currentUserData.email;
+                document.getElementById('username-display').textContent = currentUserData.displayName;
+                document.getElementById('profile-icon').textContent = currentUserData.displayName.charAt(0).toUpperCase();
             } finally {
                 showLoading(false);
             }
