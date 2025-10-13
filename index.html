@@ -4,76 +4,61 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Interactive Map App</title>
-    <!-- PWA Manifest -->
     <link rel="manifest" href="/Interactive-Map.io/manifest.json">
-    <!-- Theme color for PWA (status bar, splash screen) -->
     <meta name="theme-color" content="#007cba">
-    <!-- Apple-specific for iOS PWA -->
     <link rel="apple-touch-icon" href="/Interactive-Map.io/icon-192.png">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <!-- Microsoft-specific for Windows PWA -->
     <meta name="msapplication-TileImage" content="/Interactive-Map.io/icon-192.png">
     
-    <!-- Local Leaflet CSS -->
     <link rel="stylesheet" href="./leaflet.css">
-    
-    <!-- Local Leaflet.markercluster CSS -->
     <link rel="stylesheet" href="./MarkerCluster.css">
     <link rel="stylesheet" href="./MarkerCluster.Default.css">
     
-    <!-- Local Leaflet JS (defer for non-blocking) -->
     <script src="./leaflet.js" defer></script>
-    
-    <!-- Local Leaflet.markercluster JS (defer) -->
     <script src="./leaflet.markercluster.js" defer></script>
     
-    <!-- Local PapaParse JS (defer; or keep CDN if not downloaded) -->
-    <script src="./papaparse.min.js" defer></script>
-    
     <style>
-        /* App-like: Fullscreen layout */
         html, body {
             margin: 0;
             padding: 0;
             height: 100vh;
-            overflow: hidden;  /* Prevent scrollbars */
+            overflow: hidden;
             font-family: Arial, sans-serif;
         }
         
         #map {
-            height: 100vh;  /* Full height minus controls padding */
+            height: 100vh;
             width: 100vw;
-            border: none;  /* Remove border for seamless fullscreen */
+            border: none;
             position: relative;
             z-index: 1;
         }
         
-        /* Floating Controls: Fixed overlay at top-center */
         #search-container {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 100;
-            background: rgba(255, 255, 255, 0.9);  /* Semi-transparent white for visibility over map */
+            background: rgba(255, 255, 255, 0.95);
             padding: 10px 15px;
-            border-radius: 25px;  /* Pill-shaped for modern app feel */
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);  /* Subtle shadow */
+            border-radius: 25px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
-            gap: 10px;  /* Space between elements */
-            min-width: 300px;  /* Prevent squishing on small screens */
+            gap: 10px;
+            min-width: 300px;
         }
         
         #search {
-            flex: 1;  /* Grow to fill space */
+            flex: 1;
             padding: 10px;
             font-size: 16px;
             border: 1px solid #ccc;
-            border-radius: 20px;  /* Rounded input */
+            border-radius: 20px;
             box-sizing: border-box;
-            min-width: 200px;  /* Ensure usability on mobile */
+            min-width: 200px;
         }
         
         #search:focus {
@@ -100,9 +85,9 @@
             color: white;
         }
         
-        #save-csv-btn, #settings-btn {
+        #settings-btn {
             padding: 10px 15px;
-            background: #007cba;
+            background: #6c757d;
             color: white;
             border: none;
             border-radius: 20px;
@@ -112,23 +97,10 @@
             flex-shrink: 0;
         }
         
-        #save-csv-btn:hover, #settings-btn:hover {
-            background: #005a87;
-        }
-        
-        #settings-btn {
-            background: #6c757d;
-        }
-        
         #settings-btn:hover {
             background: #5a6268;
         }
         
-        #save-csv-btn {
-            display: none;
-        }
-        
-        /* Responsive: Stack on very small screens (e.g., mobile portrait) */
         @media (max-width: 480px) {
             #search-container {
                 display: flex;
@@ -149,60 +121,163 @@
                 min-width: auto;
             }
             
-            #add-btn, #save-csv-btn, #settings-btn {
+            #add-btn, #settings-btn {
                 border-radius: 20px;
                 text-align: center;
             }
         }
         
-        /* Modal Styles (unchanged, but ensure z-index above controls) */
         .modal { 
-            display: none; position: fixed; z-index: 1000; 
-            left: 0; top: 0; width: 100%; height: 100%; 
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; 
+            top: 0; 
+            width: 100%; 
+            height: 100%; 
             background-color: rgba(0,0,0,0.5); 
         }
+        
         .modal-content { 
-            background-color: white; margin: 15% auto; 
-            padding: 20px; border-radius: 8px; width: 90%; max-width: 400px; 
+            background-color: white; 
+            margin: 15% auto; 
+            padding: 20px; 
+            border-radius: 8px; 
+            width: 90%; 
+            max-width: 400px; 
             box-shadow: 0 4px 20px rgba(0,0,0,0.3); 
         }
-        .modal h3 { margin-top: 0; }
-        .modal input, .modal textarea { 
-            width: 100%; padding: 8px; margin: 5px 0 15px 0; 
-            border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; 
-        }
-        .modal textarea { height: 80px; resize: vertical; }
-        .modal button { 
-            padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; 
-        }
-        .modal .btn-primary { background: #007cba; color: white; }
-        .modal .btn-secondary { background: #6c757d; color: white; }
-        .modal .btn-primary:hover, .modal .btn-secondary:hover { opacity: 0.8; }
         
-        /* Offline message (floating, top-right) */
+        .modal h3 { margin-top: 0; }
+        
+        .modal input, .modal textarea { 
+            width: 100%; 
+            padding: 8px; 
+            margin: 5px 0 15px 0; 
+            border: 1px solid #ccc; 
+            border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        
+        .modal textarea { 
+            height: 80px; 
+            resize: vertical; 
+        }
+        
+        .modal button { 
+            padding: 10px 15px; 
+            margin: 5px; 
+            border: none; 
+            border-radius: 4px; 
+            cursor: pointer; 
+        }
+        
+        .modal .btn-primary { 
+            background: #007cba; 
+            color: white; 
+        }
+        
+        .modal .btn-secondary { 
+            background: #6c757d; 
+            color: white; 
+        }
+        
+        .modal .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .modal .btn-primary:hover, 
+        .modal .btn-secondary:hover,
+        .modal .btn-danger:hover { 
+            opacity: 0.8; 
+        }
+        
         #offline-message { 
-            display: none; position: fixed; top: 20px; right: 20px; 
-            background: #ff9800; color: white; padding: 10px; border-radius: 4px; 
-            z-index: 1001; font-size: 14px; 
+            display: none; 
+            position: fixed; 
+            top: 20px; 
+            right: 20px; 
+            background: #ff9800; 
+            color: white; 
+            padding: 10px; 
+            border-radius: 4px; 
+            z-index: 1001; 
+            font-size: 14px; 
+        }
+
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007cba;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .popup-actions {
+            margin-top: 10px;
+            display: flex;
+            gap: 5px;
+        }
+
+        .popup-actions button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .popup-edit {
+            background: #007cba;
+            color: white;
+        }
+
+        .popup-delete {
+            background: #dc3545;
+            color: white;
         }
     </style>
 </head>
 <body>
-    <!-- No title/header for app-like feel -->
-    
     <div id="search-container">
         <input type="text" id="search" placeholder="Search by title, notes, address, or user..." />
         <div id="stacker">
             <button id="add-btn" title="Add New Location">+</button>
-            <button id="save-csv-btn" title="Email Updated CSV">Send CSV</button>
             <button id="settings-btn">Settings</button>
         </div>
     </div>
     
     <div id="map"></div>
 
-    <!-- Offline Message -->
     <div id="offline-message">Offline Mode: Some features limited.</div>
+
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+    </div>
 
     <!-- Creation Modal -->
     <div id="creation-modal" class="modal">
@@ -210,63 +285,202 @@
             <h3>Add New Location</h3>
             <p>Clicked at: <span id="click-coords"></span></p>
             <input type="text" id="new-title" placeholder="Title (required)" />
-            <input type="text" id="new-user" placeholder="User (optional)" />
+            <input type="text" id="new-user" placeholder="User (auto-filled)" readonly />
             <textarea id="new-notes" placeholder="Notes (optional)"></textarea>
             <input type="text" id="new-address" placeholder="Address (optional, for search/display)" />
             <button class="btn-primary" id="submit-location-btn">Add Location</button>
             <button class="btn-secondary" id="cancel-location-btn">Cancel</button>
         </div>
     </div>
-<script>
-    // Wait for DOM and deferred scripts to load before initializing
-    document.addEventListener('DOMContentLoaded', function() {
-            // Global variables
-            let map;
-            let markers;  // Cluster group
-            let allMarkers = [];  // Array to store all individual markers for filtering
-            let searchTimeout;  // For debouncing search
-            let creationMode = false;  // Toggle for creation mode
-            let tempMarker = null;  // Temporary marker during creation
-            let clickLat, clickLon;  // Store clicked coords
-            let originalData = [];  // Store original CSV data for export
-            let newMarkers = [];  // Track new markers for export
-            let currentUser = localStorage.getItem('loggedInUser') || null;  // Logged-in user
 
-            // Session Check: Redirect to login if not authenticated
-            if (!currentUser) {
-                window.location.href = '/Interactive-Map.io/login.html';
-                return;  // Exit early if not logged in
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <h3>Edit Location</h3>
+            <input type="text" id="edit-title" placeholder="Title (required)" />
+            <textarea id="edit-notes" placeholder="Notes (optional)"></textarea>
+            <input type="text" id="edit-address" placeholder="Address (optional)" />
+            <button class="btn-primary" id="update-location-btn">Update Location</button>
+            <button class="btn-danger" id="delete-location-btn">Delete Location</button>
+            <button class="btn-secondary" id="cancel-edit-btn">Cancel</button>
+        </div>
+    </div>
+
+    <script type="module">
+        import { auth, db, onAuthStateChanged, signOut, collection, addDoc, 
+                 getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, 
+                 orderBy, serverTimestamp } from './firebase-config.js';
+
+        // Wait for DOM and deferred scripts to load
+        document.addEventListener('DOMContentLoaded', function() {
+            let map;
+            let markers;
+            let allMarkers = [];
+            let searchTimeout;
+            let creationMode = false;
+            let tempMarker = null;
+            let clickLat, clickLon;
+            let currentUser = null;
+            let currentUserData = null;
+            let editingLocationId = null;
+
+            // Show/hide loading overlay
+            function showLoading(show = true) {
+                document.getElementById('loading-overlay').classList.toggle('active', show);
             }
 
-            // Initialize the map (centered on US; adjust lat/lon/zoom as needed)
-            map = L.map('map').setView([39.8283, -98.5795], 4);  // US center, zoom level 4
-            
-            // Add OpenStreetMap tiles (free; self-host tiles if needed via a tile server)
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
+            // Session Check: Redirect to login if not authenticated
+            onAuthStateChanged(auth, async (user) => {
+                if (!user) {
+                    window.location.href = '/Interactive-Map.io/login.html';
+                    return;
+                }
 
-            // Create a marker cluster group
-            markers = L.markerClusterGroup({
-                maxClusterRadius: 50,
-                spiderfyOnMaxZoom: true,
-                showCoverageOnHover: true,
-                zoomToBoundsOnClick: true
+                currentUser = user;
+                
+                // Load user profile from Firestore
+                try {
+                    const userDoc = await getDoc(doc(db, 'users', user.uid));
+                    if (userDoc.exists()) {
+                        currentUserData = userDoc.data();
+                    }
+                } catch (error) {
+                    console.error('Error loading user profile:', error);
+                }
+
+                // Initialize map after authentication
+                initializeMap();
             });
 
-            // Function to create popup content (includes address and user if present)
-            function createPopupContent(title, lat, lon, notes, address, user) {
+            function initializeMap() {
+                // Initialize the map
+                map = L.map('map').setView([39.8283, -98.5795], 4);
+                
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                }).addTo(map);
+
+                markers = L.markerClusterGroup({
+                    maxClusterRadius: 50,
+                    spiderfyOnMaxZoom: true,
+                    showCoverageOnHover: true,
+                    zoomToBoundsOnClick: true
+                });
+
+                // Load locations from Firestore
+                loadLocationsFromFirestore();
+
+                // Event listeners
+                document.getElementById('add-btn').addEventListener('click', toggleCreationMode);
+                document.getElementById('search').addEventListener('input', handleSearch);
+                document.getElementById('settings-btn').addEventListener('click', () => {
+                    window.location.href = '/Interactive-Map.io/settings.html';
+                });
+                document.getElementById('submit-location-btn').addEventListener('click', submitNewLocation);
+                document.getElementById('cancel-location-btn').addEventListener('click', cancelNewLocation);
+                document.getElementById('update-location-btn').addEventListener('click', updateLocation);
+                document.getElementById('delete-location-btn').addEventListener('click', deleteLocation);
+                document.getElementById('cancel-edit-btn').addEventListener('click', cancelEdit);
+
+                // PWA: Register Service Worker
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.register('/Interactive-Map.io/sw.js')
+                        .then(registration => console.log('SW registered: ', registration))
+                        .catch(error => console.log('SW registration failed: ', error));
+                }
+
+                // PWA: Offline Detection
+                window.addEventListener('online', () => {
+                    document.getElementById('offline-message').style.display = 'none';
+                });
+                window.addEventListener('offline', () => {
+                    document.getElementById('offline-message').style.display = 'block';
+                    if (creationMode) {
+                        alert('Offline: Cannot add new locations. Reload when online.');
+                    }
+                });
+            }
+
+            // Load locations from Firestore
+            async function loadLocationsFromFirestore() {
+                showLoading(true);
+                try {
+                    const locationsRef = collection(db, 'locations');
+                    const q = query(locationsRef, orderBy('createdAt', 'desc'));
+                    const querySnapshot = await getDocs(q);
+
+                    allMarkers = [];
+                    let validMarkers = 0;
+
+                    for (const docSnap of querySnapshot.docs) {
+                        const data = docSnap.data();
+                        const locationId = docSnap.id;
+                        
+                        const lat = parseFloat(data.latitude);
+                        const lon = parseFloat(data.longitude);
+                        const title = data.title || 'Untitled Location';
+                        const notes = data.notes || '';
+                        const address = data.address || '';
+                        const userId = data.userId || '';
+
+                        // Get username from user profile
+                        let username = 'Unknown User';
+                        if (userId) {
+                            try {
+                                const userDoc = await getDoc(doc(db, 'users', userId));
+                                if (userDoc.exists()) {
+                                    username = userDoc.data().displayName || userDoc.data().email || 'Unknown User';
+                                }
+                            } catch (error) {
+                                console.error('Error loading user:', error);
+                            }
+                        }
+
+                        if (!isNaN(lat) && !isNaN(lon)) {
+                            const popupContent = createPopupContent(locationId, title, lat, lon, notes, address, username, userId);
+                            const marker = L.marker([lat, lon]).bindPopup(popupContent);
+                            
+                            allMarkers.push({ 
+                                locationId, 
+                                title, 
+                                notes, 
+                                address, 
+                                user: username, 
+                                userId,
+                                lat, 
+                                lon, 
+                                marker 
+                            });
+                            
+                            markers.addLayer(marker);
+                            validMarkers++;
+                        }
+                    }
+
+                    map.addLayer(markers);
+                    console.log(`${validMarkers} markers loaded from Firestore.`);
+                } catch (error) {
+                    console.error('Error loading locations:', error);
+                    alert('Failed to load locations. Please refresh the page.');
+                } finally {
+                    showLoading(false);
+                }
+            }
+
+            // Create popup content
+            function createPopupContent(locationId, title, lat, lon, notes, address, user, userId) {
                 let popupContent = `<b>${title}</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
                 if (address) {
                     popupContent += `<br><strong>Address:</strong><br>${address}`;
                 }
-                if (user && user.trim() !== '') {
+                if (user) {
                     popupContent += `<br><strong>User:</strong> ${user}`;
                 }
                 if (notes) {
                     popupContent += `<br><br><strong>Notes:</strong><br>${notes}`;
                 }
-                // Add View Details link (passes data as URL-encoded JSON, including user)
+
+                // Add View Details link
                 const locationData = {
                     title,
                     lat: lat.toFixed(6),
@@ -277,36 +491,120 @@
                 };
                 const encodedData = encodeURIComponent(JSON.stringify(locationData));
                 popupContent += `<br><br><a href="location.html?data=${encodedData}" style="background: #007cba; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; display: inline-block;">View Details</a>`;
+
+                // Add Edit/Delete buttons if user owns this location
+                if (currentUser && userId === currentUser.uid) {
+                    popupContent += `
+                        <div class="popup-actions">
+                            <button class="popup-edit" onclick="window.editLocation('${locationId}')">Edit</button>
+                            <button class="popup-delete" onclick="window.confirmDeleteLocation('${locationId}')">Delete</button>
+                        </div>
+                    `;
+                }
+
                 return popupContent;
             }
 
-            // Function to add a permanent marker from new data
-            function addPermanentMarker(title, notes, address, user, lat, lon) {
-                const popupContent = createPopupContent(title, lat, lon, notes, address, user);
-                const marker = L.marker([lat, lon]).bindPopup(popupContent);
-                const markerObj = { title, notes, address, user: user || '', lat, lon, marker };
-                allMarkers.push(markerObj);
-                newMarkers.push({ latitude: lat, longitude: lon, title, notes, address, user: user || '' });  // For export
-                markers.addLayer(marker);
-                rebuildClusters();
-                document.getElementById('save-csv-btn').style.display = 'inline-block';
-                console.log(`Added new marker: ${title} by ${user || 'Unknown'} at [${lat.toFixed(6)}, ${lon.toFixed(6)}]`);
-            }
+            // Edit location
+            window.editLocation = async function(locationId) {
+                try {
+                    const locationDoc = await getDoc(doc(db, 'locations', locationId));
+                    if (locationDoc.exists()) {
+                        const data = locationDoc.data();
+                        editingLocationId = locationId;
+                        
+                        document.getElementById('edit-title').value = data.title || '';
+                        document.getElementById('edit-notes').value = data.notes || '';
+                        document.getElementById('edit-address').value = data.address || '';
+                        
+                        document.getElementById('edit-modal').style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error('Error loading location:', error);
+                    alert('Failed to load location details.');
+                }
+            };
 
-            // Function to rebuild clusters (after adding new markers; no Fuse needed)
-            function rebuildClusters() {
-                // Re-apply current search filter if active
-                const currentSearch = document.getElementById('search').value;
-                if (currentSearch) {
-                    filterMarkers(currentSearch);
-                } else {
-                    // Ensure all are visible
-                    markers.clearLayers();
-                    allMarkers.forEach(markerObj => markers.addLayer(markerObj.marker));
+            // Update location
+            async function updateLocation() {
+                if (!editingLocationId) return;
+
+                const title = document.getElementById('edit-title').value.trim();
+                const notes = document.getElementById('edit-notes').value.trim();
+                const address = document.getElementById('edit-address').value.trim();
+
+                if (!title) {
+                    alert('Title is required!');
+                    return;
+                }
+
+                showLoading(true);
+
+                try {
+                    await updateDoc(doc(db, 'locations', editingLocationId), {
+                        title,
+                        notes,
+                        address,
+                        updatedAt: serverTimestamp()
+                    });
+
+                    document.getElementById('edit-modal').style.display = 'none';
+                    editingLocationId = null;
+
+                    // Reload locations
+                    await loadLocationsFromFirestore();
+                    
+                    alert('Location updated successfully!');
+                } catch (error) {
+                    console.error('Error updating location:', error);
+                    alert('Failed to update location. Please try again.');
+                } finally {
+                    showLoading(false);
                 }
             }
 
-            // Function to filter and update visible markers based on exact substring search (case-insensitive)
+            // Confirm delete location
+            window.confirmDeleteLocation = function(locationId) {
+                if (confirm('Are you sure you want to delete this location? This cannot be undone.')) {
+                    deleteLocationById(locationId);
+                }
+            };
+
+            // Delete location
+            async function deleteLocation() {
+                if (!editingLocationId) return;
+                
+                if (confirm('Are you sure you want to delete this location? This cannot be undone.')) {
+                    await deleteLocationById(editingLocationId);
+                    document.getElementById('edit-modal').style.display = 'none';
+                    editingLocationId = null;
+                }
+            }
+
+            async function deleteLocationById(locationId) {
+                showLoading(true);
+
+                try {
+                    await deleteDoc(doc(db, 'locations', locationId));
+
+                    // Reload locations
+                    await loadLocationsFromFirestore();
+                    
+                    alert('Location deleted successfully!');
+                } catch (error) {
+                    console.error('Error deleting location:', error);
+                    alert('Failed to delete location. Please try again.');
+                } finally {
+                    showLoading(false);
+                }
+            }
+
+            function cancelEdit() {
+                document.getElementById('edit-modal').style.display = 'none';
+                editingLocationId = null;
+            }
+
+            // Filter markers
             function filterMarkers(searchTerm) {
                 const term = searchTerm.trim().toLowerCase();
                 markers.clearLayers();
@@ -327,7 +625,6 @@
                         if (titleMatch || notesMatch || addressMatch || userMatch) {
                             markers.addLayer(markerObj.marker);
                             visibleCount++;
-                            console.log(`Match: "${markerObj.title}" (via ${titleMatch ? 'title' : notesMatch ? 'notes' : addressMatch ? 'address' : 'user'})`);
                         }
                     });
                 }
@@ -370,242 +667,99 @@
 
             // Handle map click in creation mode
             function handleMapClick(e) {
-        const lat = e.latlng.lat;
-        const lon = e.latlng.lng;
-        clickLat = lat;
-        clickLon = lon;
-        
-        // Remove previous temp marker
-        if (tempMarker) {
-            map.removeLayer(tempMarker);
-        }
-        
-        // Add temporary red marker (using divIcon for simplicity, no external dependencies)
-        tempMarker = L.marker([lat, lon], {
-            icon: L.divIcon({
-                className: 'temp-marker',
-                html: '<div style="background-color: red; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
-                iconSize: [20, 20],
-                iconAnchor: [10, 10]
-            })
-        }).addTo(map);
-        
-        // Show coords in modal and open it
-        document.getElementById('click-coords').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
-        document.getElementById('creation-modal').style.display = 'block';
-        document.getElementById('new-title').focus();
-        
-        // Pre-fill user field with current logged-in user (editable)
-        const userInput = document.getElementById('new-user');
-        if (userInput && currentUser) {
-            userInput.value = currentUser;
-        }
+                const lat = e.latlng.lat;
+                const lon = e.latlng.lng;
+                clickLat = lat;
+                clickLon = lon;
+                
+                if (tempMarker) {
+                    map.removeLayer(tempMarker);
+                }
+                
+                tempMarker = L.marker([lat, lon], {
+                    icon: L.divIcon({
+                        className: 'temp-marker',
+                        html: '<div style="background-color: red; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                        iconSize: [20, 20],
+                        iconAnchor: [10, 10]
+                    })
+                }).addTo(map);
+                
+                document.getElementById('click-coords').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+                document.getElementById('creation-modal').style.display = 'block';
+                document.getElementById('new-title').focus();
+                
+                // Pre-fill user field
+                const userInput = document.getElementById('new-user');
+                if (userInput && currentUserData) {
+                    userInput.value = currentUserData.displayName || currentUser.email;
+                }
             }
 
             // Submit new location
-            function submitNewLocation() {
-        const title = document.getElementById('new-title').value.trim();
-        const notes = document.getElementById('new-notes').value.trim();
-        const address = document.getElementById('new-address').value.trim();
-        const newUserInput = document.getElementById('new-user');
-        const user = newUserInput ? newUserInput.value.trim() : '';
-        
-        if (!title) {
-            alert('Title is required!');
-            return;
-        }
-        
-        // Add permanent marker
-        addPermanentMarker(title, notes, address, user, clickLat, clickLon);
-        
-        // Clear and close modal
-        document.getElementById('new-title').value = '';
-        document.getElementById('new-notes').value = '';
-        document.getElementById('new-address').value = '';
-        if (newUserInput) {
-            newUserInput.value = '';
-        }
-        document.getElementById('creation-modal').style.display = 'none';
-        
-        // Remove temp marker
-        if (tempMarker) {
-            map.removeLayer(tempMarker);
-            tempMarker = null;
-        }
-        
-        // Exit creation mode after add
-        toggleCreationMode();
+            async function submitNewLocation() {
+                const title = document.getElementById('new-title').value.trim();
+                const notes = document.getElementById('new-notes').value.trim();
+                const address = document.getElementById('new-address').value.trim();
+                
+                if (!title) {
+                    alert('Title is required!');
+                    return;
+                }
+
+                showLoading(true);
+
+                try {
+                    // Add to Firestore
+                    await addDoc(collection(db, 'locations'), {
+                        userId: currentUser.uid,
+                        latitude: clickLat,
+                        longitude: clickLon,
+                        title,
+                        notes,
+                        address,
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp()
+                    });
+
+                    // Clear and close modal
+                    document.getElementById('new-title').value = '';
+                    document.getElementById('new-notes').value = '';
+                    document.getElementById('new-address').value = '';
+                    document.getElementById('creation-modal').style.display = 'none';
+                    
+                    if (tempMarker) {
+                        map.removeLayer(tempMarker);
+                        tempMarker = null;
+                    }
+                    
+                    // Exit creation mode
+                    toggleCreationMode();
+
+                    // Reload locations
+                    await loadLocationsFromFirestore();
+                    
+                    console.log('Location added successfully!');
+                } catch (error) {
+                    console.error('Error adding location:', error);
+                    alert('Failed to add location. Please try again.');
+                } finally {
+                    showLoading(false);
+                }
             }
 
             // Cancel new location
             function cancelNewLocation() {
-        if (tempMarker) {
-            map.removeLayer(tempMarker);
-            tempMarker = null;
-        }
-        document.getElementById('creation-modal').style.display = 'none';
-        document.getElementById('new-title').value = '';
-        document.getElementById('new-notes').value = '';
-        document.getElementById('new-address').value = '';
-        const newUserInput = document.getElementById('new-user');
-        if (newUserInput) {
-            newUserInput.value = '';
-        }
-            }
-
-            // Export updated CSV via email (original + new markers, including user)
-            function exportCSV() {
-        let csvContent = 'latitude,longitude,title,notes,address,user\n';
-        
-        // Add original data
-        originalData.forEach(row => {
-            csvContent += `${row.latitude || ''},${row.longitude || ''},"${(row.title || '').replace(/"/g, '""')}","${(row.notes || '').replace(/"/g, '""')}","${(row.address || '').replace(/"/g, '""')}","${(row.user || '').replace(/"/g, '""')}"\n`;
-        });
-        
-        // Add new markers
-        newMarkers.forEach(marker => {
-            csvContent += `${marker.latitude},${marker.longitude},"${marker.title.replace(/"/g, '""')}","${marker.notes.replace(/"/g, '""')}","${marker.address.replace(/"/g, '""')}","${(marker.user || '').replace(/"/g, '""')}"\n`;
-        });
-        
-        // Open email client with CSV in body (mailto: workaround for client-side)
-        const subject = encodeURIComponent('Updated Map Data CSV');
-        const body = encodeURIComponent('Attached is the updated CSV file with new locations.\n\nCopy the content below and save as .csv:\n\n' + csvContent);
-        const mailtoLink = `mailto:taway133@gmail.com?subject=${subject}&body=${body}`;
-        window.location.href = mailtoLink;
-        
-        console.log('Email client opened with CSV content. Please send the email.');
-            }
-
-            // Function to load and parse CSV, then add markers to cluster
-            function loadCSVAndAddMarkers() {
-        Papa.parse('/Interactive-Map.io/data.csv', {
-            download: true,
-            header: true,
-            complete: function(results) {
-                const data = results.data;
-                originalData = data;  // Store for export
-                if (data.length === 0) {
-                    console.error('No data in CSV');
-                    return;
+                if (tempMarker) {
+                    map.removeLayer(tempMarker);
+                    tempMarker = null;
                 }
-
-                allMarkers = [];  // Reset array
-                let validMarkers = 0;
-                let skippedCount = 0;
-                
-                data.forEach((row, i) => {
-                    const lat = parseFloat(row.latitude);
-                    const lon = parseFloat(row.longitude);
-                    const title = row.title || `Location (${lat ? lat.toFixed(4) : 'Unknown'}, ${lon ? lon.toFixed(4) : 'Unknown'})`;
-                    const notes = row.notes || '';
-                    const address = row.address || '';
-                    const user = row.user || '';  // New user field, defaults to empty if missing
-
-                    if (!isNaN(lat) && !isNaN(lon)) {
-                        // Create popup content
-                        const popupContent = createPopupContent(title, lat, lon, notes, address, user);
-
-                        // Create marker with popup
-                        const marker = L.marker([lat, lon]).bindPopup(popupContent);
-                        
-                        // Store marker with its data for searching (include address and user) + lat/lon for details page
-                        allMarkers.push({ title, notes, address, user, lat, lon, marker });
-                        
-                        // Add to cluster
-                        markers.addLayer(marker);
-                        validMarkers++;
-                    } else {
-                        console.warn(`Skipping row ${i + 1} (missing/invalid lat/lon):`, row);
-                        skippedCount++;
-                    }
-                });
-
-                // Add the cluster group to the map
-                map.addLayer(markers);
-
-                console.log(`${validMarkers} markers loaded (${skippedCount} skipped due to missing lat/lon).`);
-            },
-            error: function(error) {
-                console.error('Error loading CSV:', error);
+                document.getElementById('creation-modal').style.display = 'none';
+                document.getElementById('new-title').value = '';
+                document.getElementById('new-notes').value = '';
+                document.getElementById('new-address').value = '';
             }
         });
-            }
-
-            // Event listeners
-            document.getElementById('add-btn').addEventListener('click', toggleCreationMode);
-            document.getElementById('search').addEventListener('input', handleSearch);
-            document.getElementById('save-csv-btn').addEventListener('click', exportCSV);
-            document.getElementById('settings-btn').addEventListener('click', () => {
-                window.location.href = '/Interactive-Map.io/settings.html';
-            });
-            document.getElementById('submit-location-btn').addEventListener('click', submitNewLocation);
-            document.getElementById('cancel-location-btn').addEventListener('click', cancelNewLocation);
-
-            // Load the data when the page loads
-            loadCSVAndAddMarkers();
-
-            // PWA: Register Service Worker
-            if ('serviceWorker' in navigator) {
-                window.addEventListener('load', () => {
-                    navigator.serviceWorker.register('/Interactive-Map.io/sw.js')
-                        .then(registration => console.log('SW registered: ', registration))
-                        .catch(error => console.log('SW registration failed: ', error));
-                });
-            }
-
-            // PWA: Offline Detection
-            window.addEventListener('online', () => {
-                document.getElementById('offline-message').style.display = 'none';
-            });
-            window.addEventListener('offline', () => {
-                document.getElementById('offline-message').style.display = 'block';
-                if (creationMode) {
-                    alert('Offline: Cannot add new locations or send email. Reload when online.');
-                }
-            });
-
-            // PWA: Install Prompt
-            let deferredPrompt;
-            window.addEventListener('beforeinstallprompt', (e) => {
-                e.preventDefault();
-                deferredPrompt = e;
-            });
-        });
-</script>
+    </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
