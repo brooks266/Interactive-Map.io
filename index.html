@@ -498,7 +498,7 @@
 
             // Create popup content
             function createPopupContent(locationId, title, lat, lon, notes, address, user, userId) {
-                let popupContent = `<b>${title}</b><br>Lat: ${lat.toFixed(6)}<br>Lon: ${lon.toFixed(6)}`;
+                let popupContent = `<b>${title}</b><br>`;
                 if (address) {
                     popupContent += `<br><strong>Address:</strong><br>${address}`;
                 }
@@ -792,4 +792,5 @@
     </script>
 </body>
 </html>
+
 
