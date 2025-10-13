@@ -100,7 +100,7 @@
             color: white;
         }
         
-        #save-csv-btn, #logout-btn {
+        #save-csv-btn, #settings-btn {
             padding: 10px 15px;
             background: #007cba;
             color: white;
@@ -112,16 +112,16 @@
             /*flex-shrink: 0; */
         }
         
-        #save-csv-btn:hover, #logout-btn:hover {
+        #save-csv-btn:hover, #settings-btn:hover {
             background: #005a87;
         }
         
-        #logout-btn {
-            background: #dc3545;
+        #settings-btn {
+            background: #6c757d;
         }
         
-        #logout-btn:hover {
-            background: #c82333;
+        #settings-btn:hover {
+            background: #5a6268;
         }
         
         #save-csv-btn {
@@ -151,7 +151,7 @@
                 min-width: auto;
             }
             
-            #add-btn, #save-csv-btn, #logout-btn {
+            #add-btn, #save-csv-btn, #settings-btn {
                 width: 100%;  /* Full width on stack */
                 border-radius: 20px;
                 text-align: center;
@@ -198,7 +198,7 @@
 		<div id="stacker">
         	<button id="add-btn" title="Add New Location">+</button>
         	<button id="save-csv-btn" title="Email Updated CSV" onclick="exportCSV()">Send CSV</button>
-        	<button id="logout-btn" onclick="logout()">Logout</button>
+        <button id="settings-btn" onclick="goToSettings()">Settings</button>
 		</div>
     </div>
     
@@ -221,11 +221,9 @@
         </div>
     </div>
 <script>
-	    // Logout function
-    function logout() {
-        localStorage.removeItem('loggedInUser');
-        currentUser = null;
-        window.location.href = '/Interactive-Map.io/login.html';
+	    // Navigate to settings page
+    function goToSettings() {
+        window.location.href = '/Interactive-Map.io/settings.html';
     }
         // Wait for DOM and deferred scripts to load before initializing
         document.addEventListener('DOMContentLoaded', function() {
@@ -353,11 +351,9 @@
                 }, 300);
             }
 
-            // Logout function
-            function logout() {
-                localStorage.removeItem('loggedInUser');
-                currentUser = null;
-                window.location.href = '/Interactive-Map.io/login.html';
+            // Navigate to settings page
+            function goToSettings() {
+                window.location.href = '/Interactive-Map.io/settings.html';
             }
 
             // Toggle creation mode

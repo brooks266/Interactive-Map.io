@@ -49,12 +49,27 @@
         <div id="error-msg" class="error">Invalid username or password!</div>
     </div>
 
+    <!-- Local PapaParse JS for CSV handling -->
+    <script src="./papaparse.min.js"></script>
     <script>
-        // Hardcoded users (extend as needed; in production, fetch from backend)
-        const users = {
-            'admin': 'pass123'  // username: password
-            // Add more: 'user2': 'password2'
-        };
+        let usersData = [];
+
+        // Load users from CSV
+        function loadUsersFromCSV() {
+            Papa.parse('users.csv', {
+                download: true,
+                header: true,
+                complete: function(results) {
+                    usersData = results.data;
+                    console.log('Users loaded from CSV:', usersData.length);
+                },
+                error: function(error) {
+                    console.error('Error loading users CSV:', error);
+                    document.getElementById('error-msg').textContent = 'Failed to load user data. Please refresh.';
+                    document.getElementById('error-msg').style.display = 'block';
+                }
+            });
+        }
 
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
@@ -62,9 +77,20 @@
             const password = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('error-msg');
 
-            if (users[username] && users[username] === password) {
+            // Find user in CSV data
+            const user = usersData.find(u => u.username === username && u.password === password);
+
+            if (user) {
                 // Successful login: Store in localStorage
                 localStorage.setItem('loggedInUser', username);
+                
+                // Store user profile data in localStorage
+                localStorage.setItem('userProfile_' + username, JSON.stringify({
+                    displayName: user.displayName || username,
+                    email: user.email || '',
+                    bio: user.bio || ''
+                }));
+                
                 window.location.href = '/Interactive-Map.io/index.html';  // Redirect to map
             } else {
                 errorMsg.style.display = 'block';
@@ -76,6 +102,9 @@
         if (localStorage.getItem('loggedInUser')) {
             window.location.href = '/Interactive-Map.io/index.html';
         }
+
+        // Load users on page load
+        loadUsersFromCSV();
     </script>
 </body>
 </html>
