@@ -353,7 +353,7 @@
             });
 
             function initializeMap() {
-                // Initialize the map
+                // Initialize the map with default view (will be updated if geolocation succeeds)
                 map = L.map('map').setView([39.8283, -98.5795], 4);
                 
                 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -366,6 +366,35 @@
                     showCoverageOnHover: true,
                     zoomToBoundsOnClick: true
                 });
+
+                // Try to get user's location and center map on it
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        // Success callback
+                        function(position) {
+                            const userLat = position.coords.latitude;
+                            const userLon = position.coords.longitude;
+                            
+                            // Center map on user's location with closer zoom
+                            map.setView([userLat, userLon], 13);
+                            
+                            console.log(`Map centered on user location: ${userLat.toFixed(6)}, ${userLon.toFixed(6)}`);
+                        },
+                        // Error callback
+                        function(error) {
+                            console.log('Geolocation error or denied:', error.message);
+                            console.log('Using default map center (US)');
+                        },
+                        // Options
+                        {
+                            enableHighAccuracy: false,
+                            timeout: 5000,
+                            maximumAge: 0
+                        }
+                    );
+                } else {
+                    console.log('Geolocation not supported by browser. Using default map center.');
+                }
 
                 // Load locations from Firestore
                 loadLocationsFromFirestore();
@@ -763,3 +792,4 @@
     </script>
 </body>
 </html>
+
