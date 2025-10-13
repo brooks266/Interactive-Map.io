@@ -1,4 +1,4 @@
-   const CACHE_NAME = 'map-app-v4';  // Bump version for cache busting
+   const CACHE_NAME = 'map-app-v5';  // Bump version for cache busting
    const urlsToCache = [
      '/Interactive-Map.io/',
      '/Interactive-Map.io/index.html',
@@ -81,5 +81,6 @@
      );
    });
    
+
 
 
