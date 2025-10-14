@@ -260,92 +260,6 @@
             background: #dc3545;
             color: white;
         }
-
-        .image-upload-section {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
-
-        .image-upload-section h4 {
-            margin: 0 0 10px 0;
-            color: #007cba;
-            font-size: 16px;
-        }
-
-        .image-previews {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-bottom: 10px;
-        }
-
-        .image-preview {
-            position: relative;
-            width: 80px;
-            height: 80px;
-            border-radius: 4px;
-            overflow: hidden;
-            border: 2px solid #ddd;
-        }
-
-        .image-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .image-preview.primary {
-            border-color: #007cba;
-            box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
-        }
-
-        .image-preview .remove-btn {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: rgba(220, 53, 69, 0.9);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            font-size: 12px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .image-preview .primary-badge {
-            position: absolute;
-            bottom: 2px;
-            left: 2px;
-            background: rgba(0, 124, 186, 0.9);
-            color: white;
-            font-size: 10px;
-            padding: 1px 4px;
-            border-radius: 2px;
-        }
-
-        .upload-progress {
-            margin-top: 10px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #f0f0f0;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: #007cba;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
     </style>
 </head>
 <body>
@@ -374,21 +288,6 @@
             <input type="text" id="new-user" placeholder="User (auto-filled)" readonly />
             <textarea id="new-notes" placeholder="Notes (optional)"></textarea>
             <input type="text" id="new-address" placeholder="Address (optional, for search/display)" />
-
-            <!-- Image Upload Section -->
-            <div class="image-upload-section">
-                <h4>Images (optional)</h4>
-                <input type="file" id="new-images" accept="image/jpeg,image/png,image/webp" multiple style="display: none;" />
-                <button type="button" class="btn-secondary" id="add-images-btn" style="width: 100%; margin-bottom: 10px;">📷 Add Images</button>
-                <div id="image-previews" class="image-previews"></div>
-                <div id="upload-progress" class="upload-progress" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progress-fill"></div>
-                    </div>
-                    <p id="progress-text">Uploading...</p>
-                </div>
-            </div>
-
             <button class="btn-primary" id="submit-location-btn">Add Location</button>
             <button class="btn-secondary" id="cancel-location-btn">Cancel</button>
         </div>
@@ -401,22 +300,6 @@
             <input type="text" id="edit-title" placeholder="Title (required)" />
             <textarea id="edit-notes" placeholder="Notes (optional)"></textarea>
             <input type="text" id="edit-address" placeholder="Address (optional)" />
-
-            <!-- Image Management Section -->
-            <div class="image-upload-section">
-                <h4>Images</h4>
-                <div id="edit-existing-images" class="image-previews"></div>
-                <input type="file" id="edit-new-images" accept="image/jpeg,image/png,image/webp" multiple style="display: none;" />
-                <button type="button" class="btn-secondary" id="add-edit-images-btn" style="width: 100%; margin-bottom: 10px;">➕ Add More Images</button>
-                <div id="edit-new-previews" class="image-previews"></div>
-                <div id="edit-upload-progress" class="upload-progress" style="display: none;">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="edit-progress-fill"></div>
-                    </div>
-                    <p id="edit-progress-text">Uploading...</p>
-                </div>
-            </div>
-
             <button class="btn-primary" id="update-location-btn">Update Location</button>
             <button class="btn-danger" id="delete-location-btn">Delete Location</button>
             <button class="btn-secondary" id="cancel-edit-btn">Cancel</button>
@@ -424,9 +307,9 @@
     </div>
 
     <script type="module">
-        import { auth, db, storage, onAuthStateChanged, signOut, collection, addDoc,
-                 getDocs, doc, getDoc, updateDoc, deleteDoc, query, where,
-                 orderBy, serverTimestamp, ref, uploadBytes, getDownloadURL, deleteObject } from './firebase-config.js';
+        import { auth, db, onAuthStateChanged, signOut, collection, addDoc, 
+                 getDocs, doc, getDoc, updateDoc, deleteDoc, query, where, 
+                 orderBy, serverTimestamp } from './firebase-config.js';
 
         // Wait for DOM and deferred scripts to load
         document.addEventListener('DOMContentLoaded', function() {
@@ -528,18 +411,6 @@
                 document.getElementById('delete-location-btn').addEventListener('click', deleteLocation);
                 document.getElementById('cancel-edit-btn').addEventListener('click', cancelEdit);
 
-                // Image upload event listeners
-                document.getElementById('add-images-btn').addEventListener('click', () => {
-                    document.getElementById('new-images').click();
-                });
-                document.getElementById('new-images').addEventListener('change', handleImageSelection);
-
-                // Edit modal image event listeners
-                document.getElementById('add-edit-images-btn').addEventListener('click', () => {
-                    document.getElementById('edit-new-images').click();
-                });
-                document.getElementById('edit-new-images').addEventListener('change', handleEditImageSelection);
-
                 // PWA: Register Service Worker
                 if ('serviceWorker' in navigator) {
                     navigator.serviceWorker.register('/Interactive-Map.io/sw.js')
@@ -595,23 +466,21 @@
                         }
 
                         if (!isNaN(lat) && !isNaN(lon)) {
-                            const primaryImageUrl = data.primaryImageUrl || null;
-                            const imageCount = data.images ? data.images.length : 0;
-                            const popupContent = createPopupContent(locationId, title, lat, lon, notes, address, username, userId, primaryImageUrl, imageCount);
+                            const popupContent = createPopupContent(locationId, title, lat, lon, notes, address, username, userId);
                             const marker = L.marker([lat, lon]).bindPopup(popupContent);
-
-                            allMarkers.push({
-                                locationId,
-                                title,
-                                notes,
-                                address,
-                                user: username,
+                            
+                            allMarkers.push({ 
+                                locationId, 
+                                title, 
+                                notes, 
+                                address, 
+                                user: username, 
                                 userId,
-                                lat,
-                                lon,
-                                marker
+                                lat, 
+                                lon, 
+                                marker 
                             });
-
+                            
                             markers.addLayer(marker);
                             validMarkers++;
                         }
@@ -628,20 +497,8 @@
             }
 
             // Create popup content
-            function createPopupContent(locationId, title, lat, lon, notes, address, user, userId, primaryImageUrl = null, imageCount = 0) {
-                let popupContent = '';
-
-                // Add primary image thumbnail if available
-                if (primaryImageUrl) {
-                    popupContent += `
-                        <div style="text-align: center; margin-bottom: 10px;">
-                            <img src="${primaryImageUrl}" alt="Location image" style="max-width: 120px; max-height: 80px; border-radius: 4px; object-fit: cover; border: 1px solid #ddd; cursor: pointer;" onclick="window.openLocationDetails('${locationId}', '${title}', '${lat.toFixed(6)}', '${lon.toFixed(6)}', '${(address || 'N/A').replace(/'/g, "\\'")}', '${(notes || 'N/A').replace(/'/g, "\\'")}', '${(user || 'N/A').replace(/'/g, "\\'")}')">
-                            ${imageCount > 1 ? `<div style="font-size: 11px; color: #666; margin-top: 2px;">+${imageCount - 1} more</div>` : ''}
-                        </div>
-                    `;
-                }
-
-                popupContent += `<b>${title}</b><br>`;
+            function createPopupContent(locationId, title, lat, lon, notes, address, user, userId) {
+                let popupContent = `<b>${title}</b><br>`;
                 if (address) {
                     popupContent += `<br><strong>Address:</strong><br>${address}`;
                 }
@@ -677,20 +534,6 @@
                 return popupContent;
             }
 
-            // Helper function to open location details (for image click)
-            window.openLocationDetails = function(locationId, title, lat, lon, address, notes, user) {
-                const locationData = {
-                    title,
-                    lat,
-                    lon,
-                    address,
-                    notes,
-                    user
-                };
-                const encodedData = encodeURIComponent(JSON.stringify(locationData));
-                window.open(`location.html?data=${encodedData}`, '_blank');
-            };
-
             // Edit location
             window.editLocation = async function(locationId) {
                 try {
@@ -698,173 +541,16 @@
                     if (locationDoc.exists()) {
                         const data = locationDoc.data();
                         editingLocationId = locationId;
-
+                        
                         document.getElementById('edit-title').value = data.title || '';
                         document.getElementById('edit-notes').value = data.notes || '';
                         document.getElementById('edit-address').value = data.address || '';
-
-                        // Load existing images
-                        loadExistingImagesForEdit(data.images || []);
-
+                        
                         document.getElementById('edit-modal').style.display = 'block';
                     }
                 } catch (error) {
                     console.error('Error loading location:', error);
                     alert('Failed to load location details.');
-                }
-            };
-
-            // Load existing images for edit modal
-            function loadExistingImagesForEdit(images) {
-                const existingImagesContainer = document.getElementById('edit-existing-images');
-                existingImagesContainer.innerHTML = '';
-
-                images.forEach((image, index) => {
-                    const previewDiv = document.createElement('div');
-                    previewDiv.className = `image-preview${image.isPrimary ? ' primary' : ''}`;
-
-                    previewDiv.innerHTML = `
-                        <img src="${image.url}" alt="Existing image">
-                        <button type="button" class="remove-btn" onclick="removeExistingImage('${image.path}', this)">×</button>
-                        <button type="button" class="primary-btn" onclick="setPrimaryImage('${image.path}', this)" style="position: absolute; bottom: 2px; left: 2px; background: rgba(0, 124, 186, 0.9); color: white; border: none; border-radius: 2px; font-size: 10px; padding: 1px 4px; cursor: pointer;">Set Primary</button>
-                        ${image.isPrimary ? '<div class="primary-badge">Primary</div>' : ''}
-                    `;
-
-                    // Store image data
-                    previewDiv._imageData = image;
-
-                    existingImagesContainer.appendChild(previewDiv);
-                });
-            }
-
-            // Remove existing image
-            window.removeExistingImage = async function(imagePath, button) {
-                if (!confirm('Are you sure you want to delete this image?')) {
-                    return;
-                }
-
-                try {
-                    // Delete from Firebase Storage
-                    const imageRef = ref(storage, imagePath);
-                    await deleteObject(imageRef);
-
-                    // Remove from UI
-                    const preview = button.closest('.image-preview');
-                    const wasPrimary = preview.classList.contains('primary');
-                    preview.remove();
-
-                    // If was primary, make first remaining image primary
-                    if (wasPrimary) {
-                        const remaining = document.querySelectorAll('#edit-existing-images .image-preview');
-                        if (remaining.length > 0) {
-                            remaining[0].classList.add('primary');
-                            const badge = remaining[0].querySelector('.primary-badge');
-                            if (badge) badge.style.display = 'block';
-                        }
-                    }
-
-                    console.log('Image deleted successfully');
-                } catch (error) {
-                    console.error('Error deleting image:', error);
-                    alert('Failed to delete image. Please try again.');
-                }
-            };
-
-            // Set primary image
-            window.setPrimaryImage = function(imagePath, button) {
-                // Remove primary class from all images
-                const allPreviews = document.querySelectorAll('#edit-existing-images .image-preview, #edit-new-previews .image-preview');
-                allPreviews.forEach(preview => {
-                    preview.classList.remove('primary');
-                    const badge = preview.querySelector('.primary-badge');
-                    if (badge) badge.remove();
-                });
-
-                // Add primary class to selected image
-                const preview = button.closest('.image-preview');
-                preview.classList.add('primary');
-
-                const badge = document.createElement('div');
-                badge.className = 'primary-badge';
-                badge.textContent = 'Primary';
-                preview.appendChild(badge);
-            };
-
-            // Handle edit image selection
-            function handleEditImageSelection(event) {
-                const files = Array.from(event.target.files);
-                const maxImages = 5;
-                const maxFileSize = 5 * 1024 * 1024; // 5MB
-
-                // Validate files
-                const validFiles = files.filter(file => {
-                    if (!file.type.match('image/(jpeg|png|webp)')) {
-                        alert(`File "${file.name}" is not a supported image format. Please use JPEG, PNG, or WebP.`);
-                        return false;
-                    }
-                    if (file.size > maxFileSize) {
-                        alert(`File "${file.name}" is too large. Maximum size is 5MB.`);
-                        return false;
-                    }
-                    return true;
-                });
-
-                // Check total count (existing + new)
-                const existingImages = document.querySelectorAll('#edit-existing-images .image-preview').length;
-                const newImages = document.querySelectorAll('#edit-new-previews .image-preview').length;
-                if (existingImages + newImages + validFiles.length > maxImages) {
-                    alert(`You can only have up to ${maxImages} images total per location.`);
-                    return;
-                }
-
-                // Add previews
-                validFiles.forEach((file, index) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        addEditImagePreview(e.target.result, file, index === 0 && existingImages === 0 && newImages === 0);
-                    };
-                    reader.readAsDataURL(file);
-                });
-
-                // Clear file input
-                event.target.value = '';
-            }
-
-            // Add edit image preview
-            function addEditImagePreview(src, file, isPrimary = false) {
-                const previewsContainer = document.getElementById('edit-new-previews');
-                const previewDiv = document.createElement('div');
-                previewDiv.className = `image-preview${isPrimary ? ' primary' : ''}`;
-
-                previewDiv.innerHTML = `
-                    <img src="${src}" alt="New preview">
-                    <button type="button" class="remove-btn" onclick="removeEditImagePreview(this)">×</button>
-                    <button type="button" class="primary-btn" onclick="setPrimaryImage(null, this)" style="position: absolute; bottom: 2px; left: 2px; background: rgba(0, 124, 186, 0.9); color: white; border: none; border-radius: 2px; font-size: 10px; padding: 1px 4px; cursor: pointer;">Set Primary</button>
-                    ${isPrimary ? '<div class="primary-badge">Primary</div>' : ''}
-                `;
-
-                // Store file reference
-                previewDiv._file = file;
-
-                previewsContainer.appendChild(previewDiv);
-            }
-
-            // Remove edit image preview
-            window.removeEditImagePreview = function(button) {
-                const preview = button.closest('.image-preview');
-                const previewsContainer = document.getElementById('edit-new-previews');
-                const wasPrimary = preview.classList.contains('primary');
-
-                preview.remove();
-
-                // If removed primary, make first remaining image primary
-                if (wasPrimary) {
-                    const remaining = document.querySelectorAll('#edit-existing-images .image-preview, #edit-new-previews .image-preview');
-                    if (remaining.length > 0) {
-                        remaining[0].classList.add('primary');
-                        const badge = remaining[0].querySelector('.primary-badge');
-                        if (badge) badge.style.display = 'block';
-                    }
                 }
             };
 
@@ -884,93 +570,19 @@
                 showLoading(true);
 
                 try {
-                    // Get current location data
-                    const locationDoc = await getDoc(doc(db, 'locations', editingLocationId));
-                    if (!locationDoc.exists()) {
-                        throw new Error('Location not found');
-                    }
-
-                    const currentData = locationDoc.data();
-                    const existingImages = currentData.images || [];
-                    const newImages = [];
-
-                    // Upload new images if any
-                    const newPreviews = document.querySelectorAll('#edit-new-previews .image-preview');
-                    if (newPreviews.length > 0) {
-                        document.getElementById('edit-upload-progress').style.display = 'block';
-
-                        for (let i = 0; i < newPreviews.length; i++) {
-                            const preview = newPreviews[i];
-                            const file = preview._file;
-                            const isPrimary = preview.classList.contains('primary');
-
-                            // Create unique filename
-                            const timestamp = Date.now();
-                            const fileName = `${timestamp}_${file.name}`;
-                            const storagePath = `locations/${editingLocationId}/${fileName}`;
-
-                            try {
-                                // Upload to Firebase Storage
-                                const storageRef = ref(storage, storagePath);
-                                const snapshot = await uploadBytes(storageRef, file);
-                                const downloadURL = await getDownloadURL(snapshot.ref);
-
-                                const imageData = {
-                                    url: downloadURL,
-                                    path: storagePath,
-                                    uploadedAt: serverTimestamp(),
-                                    isPrimary
-                                };
-
-                                newImages.push(imageData);
-
-                                // Update progress
-                                const progress = ((i + 1) / newPreviews.length) * 100;
-                                document.getElementById('edit-progress-fill').style.width = `${progress}%`;
-                                document.getElementById('edit-progress-text').textContent = `Uploading ${i + 1} of ${newPreviews.length}...`;
-
-                            } catch (error) {
-                                console.error('Error uploading new image:', error);
-                                throw new Error(`Failed to upload ${file.name}`);
-                            }
-                        }
-                    }
-
-                    // Combine existing and new images
-                    const allImages = [...existingImages, ...newImages];
-
-                    // Determine primary image
-                    let primaryImageUrl = currentData.primaryImageUrl;
-                    const primaryImage = allImages.find(img => img.isPrimary);
-                    if (primaryImage) {
-                        primaryImageUrl = primaryImage.url;
-                    } else if (allImages.length > 0 && !primaryImageUrl) {
-                        // If no primary set, make first image primary
-                        allImages[0].isPrimary = true;
-                        primaryImageUrl = allImages[0].url;
-                    }
-
-                    // Update location document
                     await updateDoc(doc(db, 'locations', editingLocationId), {
                         title,
                         notes,
                         address,
-                        images: allImages,
-                        primaryImageUrl,
                         updatedAt: serverTimestamp()
                     });
 
                     document.getElementById('edit-modal').style.display = 'none';
                     editingLocationId = null;
 
-                    // Clear edit modal
-                    document.getElementById('edit-existing-images').innerHTML = '';
-                    document.getElementById('edit-new-previews').innerHTML = '';
-                    document.getElementById('edit-upload-progress').style.display = 'none';
-
                     // Reload locations
                     await loadLocationsFromFirestore();
-
+                    
                     alert('Location updated successfully!');
                 } catch (error) {
                     console.error('Error updating location:', error);
@@ -1019,11 +631,6 @@
             function cancelEdit() {
                 document.getElementById('edit-modal').style.display = 'none';
                 editingLocationId = null;
-
-                // Clear edit modal
-                document.getElementById('edit-existing-images').innerHTML = '';
-                document.getElementById('edit-new-previews').innerHTML = '';
-                document.getElementById('edit-upload-progress').style.display = 'none';
             }
 
             // Filter markers
@@ -1170,207 +777,6 @@
                 }
             }
 
-            // Handle image selection
-            function handleImageSelection(event) {
-                const files = Array.from(event.target.files);
-                const maxImages = 5;
-                const maxFileSize = 5 * 1024 * 1024; // 5MB
-
-                // Validate files
-                const validFiles = files.filter(file => {
-                    if (!file.type.match('image/(jpeg|png|webp)')) {
-                        alert(`File "${file.name}" is not a supported image format. Please use JPEG, PNG, or WebP.`);
-                        return false;
-                    }
-                    if (file.size > maxFileSize) {
-                        alert(`File "${file.name}" is too large. Maximum size is 5MB.`);
-                        return false;
-                    }
-                    return true;
-                });
-
-                // Check total count
-                const currentImages = document.querySelectorAll('.image-preview').length;
-                if (currentImages + validFiles.length > maxImages) {
-                    alert(`You can only upload up to ${maxImages} images per location.`);
-                    return;
-                }
-
-                // Add previews
-                validFiles.forEach((file, index) => {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        addImagePreview(e.target.result, file, index === 0 && currentImages === 0);
-                    };
-                    reader.readAsDataURL(file);
-                });
-
-                // Clear file input
-                event.target.value = '';
-            }
-
-            // Add image preview
-            function addImagePreview(src, file, isPrimary = false) {
-                const previewsContainer = document.getElementById('image-previews');
-                const previewDiv = document.createElement('div');
-                previewDiv.className = `image-preview${isPrimary ? ' primary' : ''}`;
-
-                previewDiv.innerHTML = `
-                    <img src="${src}" alt="Preview">
-                    <button type="button" class="remove-btn" onclick="removeImagePreview(this)">×</button>
-                    ${isPrimary ? '<div class="primary-badge">Primary</div>' : ''}
-                `;
-
-                // Store file reference
-                previewDiv._file = file;
-
-                previewsContainer.appendChild(previewDiv);
-            }
-
-            // Remove image preview
-            window.removeImagePreview = function(button) {
-                const preview = button.closest('.image-preview');
-                const previewsContainer = document.getElementById('image-previews');
-                const wasPrimary = preview.classList.contains('primary');
-
-                preview.remove();
-
-                // If removed primary, make first remaining image primary
-                if (wasPrimary) {
-                    const remaining = previewsContainer.querySelectorAll('.image-preview');
-                    if (remaining.length > 0) {
-                        remaining[0].classList.add('primary');
-                        remaining[0].querySelector('.primary-badge').style.display = 'block';
-                    }
-                }
-            };
-
-            // Upload images to Firebase Storage
-            async function uploadImages(locationId) {
-                const previews = document.querySelectorAll('.image-preview');
-                const images = [];
-                let primaryImageUrl = null;
-
-                for (let i = 0; i < previews.length; i++) {
-                    const preview = previews[i];
-                    const file = preview._file;
-                    const isPrimary = preview.classList.contains('primary');
-
-                    // Create unique filename
-                    const timestamp = Date.now();
-                    const fileName = `${timestamp}_${file.name}`;
-                    const storagePath = `locations/${locationId}/${fileName}`;
-
-                    try {
-                        // Upload to Firebase Storage
-                        const storageRef = ref(storage, storagePath);
-                        const snapshot = await uploadBytes(storageRef, file);
-                        const downloadURL = await getDownloadURL(snapshot.ref);
-
-                        const imageData = {
-                            url: downloadURL,
-                            path: storagePath,
-                            uploadedAt: serverTimestamp(),
-                            isPrimary
-                        };
-
-                        images.push(imageData);
-
-                        if (isPrimary) {
-                            primaryImageUrl = downloadURL;
-                        }
-
-                        // Update progress
-                        const progress = ((i + 1) / previews.length) * 100;
-                        document.getElementById('progress-fill').style.width = `${progress}%`;
-                        document.getElementById('progress-text').textContent = `Uploading ${i + 1} of ${previews.length}...`;
-
-                    } catch (error) {
-                        console.error('Error uploading image:', error);
-                        throw new Error(`Failed to upload ${file.name}`);
-                    }
-                }
-
-                return { images, primaryImageUrl };
-            }
-
-            // Submit new location
-            async function submitNewLocation() {
-                const title = document.getElementById('new-title').value.trim();
-                const notes = document.getElementById('new-notes').value.trim();
-                const address = document.getElementById('new-address').value.trim();
-
-                if (!title) {
-                    alert('Title is required!');
-                    return;
-                }
-
-                showLoading(true);
-
-                try {
-                    // First create the location document to get the ID
-                    const locationRef = await addDoc(collection(db, 'locations'), {
-                        userId: currentUser.uid,
-                        latitude: clickLat,
-                        longitude: clickLon,
-                        title,
-                        notes,
-                        address,
-                        createdAt: serverTimestamp(),
-                        updatedAt: serverTimestamp()
-                    });
-
-                    const locationId = locationRef.id;
-
-                    // Upload images if any
-                    const previews = document.querySelectorAll('.image-preview');
-                    if (previews.length > 0) {
-                        document.getElementById('upload-progress').style.display = 'block';
-
-                        try {
-                            const { images, primaryImageUrl } = await uploadImages(locationId);
-
-                            // Update location with image data
-                            await updateDoc(locationRef, {
-                                images,
-                                primaryImageUrl,
-                                updatedAt: serverTimestamp()
-                            });
-
-                        } catch (uploadError) {
-                            console.error('Image upload failed:', uploadError);
-                            alert('Location created but image upload failed. You can add images later by editing the location.');
-                        }
-                    }
-
-                    // Clear and close modal
-                    document.getElementById('new-title').value = '';
-                    document.getElementById('new-notes').value = '';
-                    document.getElementById('new-address').value = '';
-                    document.getElementById('image-previews').innerHTML = '';
-                    document.getElementById('upload-progress').style.display = 'none';
-                    document.getElementById('creation-modal').style.display = 'none';
-
-                    if (tempMarker) {
-                        map.removeLayer(tempMarker);
-                        tempMarker = null;
-                    }
-
-                    // Exit creation mode
-                    toggleCreationMode();
-
-                    // Reload locations
-                    await loadLocationsFromFirestore();
-
-                    console.log('Location added successfully!');
-                } catch (error) {
-                    console.error('Error adding location:', error);
-                    alert('Failed to add location. Please try again.');
-                } finally {
-                    showLoading(false);
-                }
-            }
-
             // Cancel new location
             function cancelNewLocation() {
                 if (tempMarker) {
@@ -1381,10 +787,9 @@
                 document.getElementById('new-title').value = '';
                 document.getElementById('new-notes').value = '';
                 document.getElementById('new-address').value = '';
-                document.getElementById('image-previews').innerHTML = '';
-                document.getElementById('upload-progress').style.display = 'none';
             }
         });
     </script>
 </body>
 </html>
+
