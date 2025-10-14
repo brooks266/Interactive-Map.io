@@ -467,7 +467,7 @@
                     document.getElementById('account-created').textContent = 'Recently';
                 }
                 
-                try {
+               /* try {
                     if (currentUserData.lastLogin) {
                         // Check if it's a Firestore Timestamp object
                         if (currentUserData.lastLogin.toDate && typeof currentUserData.lastLogin.toDate === 'function') {
@@ -484,7 +484,7 @@
                 } catch (dateError) {
                     console.error('Error formatting lastLogin date:', dateError);
                     document.getElementById('last-login').textContent = 'Just now';
-                }
+                } */
                 
             } catch (error) {
                 console.error('Error loading profile:', error);
@@ -627,5 +627,6 @@
     </script>
 </body>
 </html>
+
 
 
