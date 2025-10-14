@@ -595,21 +595,23 @@
                         }
 
                         if (!isNaN(lat) && !isNaN(lon)) {
-                            const popupContent = createPopupContent(locationId, title, lat, lon, notes, address, username, userId);
+                            const primaryImageUrl = data.primaryImageUrl || null;
+                            const imageCount = data.images ? data.images.length : 0;
+                            const popupContent = createPopupContent(locationId, title, lat, lon, notes, address, username, userId, primaryImageUrl, imageCount);
                             const marker = L.marker([lat, lon]).bindPopup(popupContent);
-                            
-                            allMarkers.push({ 
-                                locationId, 
-                                title, 
-                                notes, 
-                                address, 
-                                user: username, 
+
+                            allMarkers.push({
+                                locationId,
+                                title,
+                                notes,
+                                address,
+                                user: username,
                                 userId,
-                                lat, 
-                                lon, 
-                                marker 
+                                lat,
+                                lon,
+                                marker
                             });
-                            
+
                             markers.addLayer(marker);
                             validMarkers++;
                         }
@@ -626,8 +628,20 @@
             }
 
             // Create popup content
-            function createPopupContent(locationId, title, lat, lon, notes, address, user, userId) {
-                let popupContent = `<b>${title}</b><br>`;
+            function createPopupContent(locationId, title, lat, lon, notes, address, user, userId, primaryImageUrl = null, imageCount = 0) {
+                let popupContent = '';
+
+                // Add primary image thumbnail if available
+                if (primaryImageUrl) {
+                    popupContent += `
+                        <div style="text-align: center; margin-bottom: 10px;">
+                            <img src="${primaryImageUrl}" alt="Location image" style="max-width: 120px; max-height: 80px; border-radius: 4px; object-fit: cover; border: 1px solid #ddd; cursor: pointer;" onclick="window.openLocationDetails('${locationId}', '${title}', '${lat.toFixed(6)}', '${lon.toFixed(6)}', '${(address || 'N/A').replace(/'/g, "\\'")}', '${(notes || 'N/A').replace(/'/g, "\\'")}', '${(user || 'N/A').replace(/'/g, "\\'")}')">
+                            ${imageCount > 1 ? `<div style="font-size: 11px; color: #666; margin-top: 2px;">+${imageCount - 1} more</div>` : ''}
+                        </div>
+                    `;
+                }
+
+                popupContent += `<b>${title}</b><br>`;
                 if (address) {
                     popupContent += `<br><strong>Address:</strong><br>${address}`;
                 }
@@ -662,6 +676,20 @@
 
                 return popupContent;
             }
+
+            // Helper function to open location details (for image click)
+            window.openLocationDetails = function(locationId, title, lat, lon, address, notes, user) {
+                const locationData = {
+                    title,
+                    lat,
+                    lon,
+                    address,
+                    notes,
+                    user
+                };
+                const encodedData = encodeURIComponent(JSON.stringify(locationData));
+                window.open(`location.html?data=${encodedData}`, '_blank');
+            };
 
             // Edit location
             window.editLocation = async function(locationId) {
@@ -1360,5 +1388,3 @@
     </script>
 </body>
 </html>
-
-
