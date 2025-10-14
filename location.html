@@ -8,88 +8,508 @@
     <link rel="manifest" href="/Interactive-Map.io/manifest.json">
     <meta name="theme-color" content="#007cba">
     <style>
-        body { 
-            margin: 0; padding: 20px; 
-            font-family: Arial, sans-serif; 
-            max-width: 600px; 
-            margin: 0 auto; 
-            background-color: #f9f9f9; 
+        body {
+            margin: 0; padding: 20px;
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #f9f9f9;
         }
-        .container { 
-            background: white; 
-            padding: 30px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1); 
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         h1 { color: #333; text-align: center; }
         .detail { margin-bottom: 15px; }
         .detail strong { color: #007cba; }
-        .back-link, .streetview-link { 
-            display: inline-block; 
-            margin: 10px 5px; 
-            padding: 10px 15px; 
-            text-decoration: none; 
-            border-radius: 4px; 
+        .back-link, .streetview-link {
+            display: inline-block;
+            margin: 10px 5px;
+            padding: 10px 15px;
+            text-decoration: none;
+            border-radius: 4px;
         }
-        .back-link { 
-            background: #007cba; 
-            color: white; 
+        .back-link {
+            background: #007cba;
+            color: white;
         }
         .back-link:hover { background: #005a87; }
-        .streetview-link { 
-            background: #4285f4; 
-            color: white; 
+        .streetview-link {
+            background: #4285f4;
+            color: white;
         }
         .streetview-link:hover { background: #3367d6; }
         .error { color: #d00; text-align: center; padding: 20px; }
+
+        /* Image Gallery Styles */
+        .image-gallery {
+            margin: 30px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .carousel-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            overflow: hidden;
+        }
+
+        .carousel-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .carousel-slide.active {
+            opacity: 1;
+        }
+
+        .carousel-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .carousel-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s ease;
+        }
+
+        .carousel-nav:hover {
+            background: rgba(0,0,0,0.8);
+        }
+
+        .carousel-prev {
+            left: 10px;
+        }
+
+        .carousel-next {
+            right: 10px;
+        }
+
+        .carousel-indicators {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+        }
+
+        .indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.5);
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .indicator.active {
+            background: white;
+        }
+
+        .thumbnails {
+            display: flex;
+            gap: 8px;
+            padding: 10px;
+            background: #f8f9fa;
+            overflow-x: auto;
+        }
+
+        .thumbnail {
+            width: 60px;
+            height: 60px;
+            border-radius: 4px;
+            overflow: hidden;
+            cursor: pointer;
+            border: 2px solid transparent;
+            flex-shrink: 0;
+            transition: border-color 0.3s ease;
+        }
+
+        .thumbnail:hover,
+        .thumbnail.active {
+            border-color: #007cba;
+        }
+
+        .thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .no-images {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .no-images i {
+            font-size: 48px;
+            color: #ddd;
+            margin-bottom: 10px;
+        }
+
+        /* Lightbox Styles */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.9);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-prev {
+            left: 20px;
+        }
+
+        .lightbox-next {
+            right: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .carousel-container {
+                height: 250px;
+            }
+
+            .lightbox img {
+                max-width: 95%;
+                max-height: 95%;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <a href="index.html" class="back-link">← Back to Map</a>
-        
+
         <div id="details"></div>
+
+        <!-- Image Gallery Container -->
+        <div id="image-gallery" class="image-gallery" style="display: none;"></div>
     </div>
 
-    <script>
-        // Parse URL query param for data
-        const urlParams = new URLSearchParams(window.location.search);
-        const encodedData = urlParams.get('data');
-        
-        if (encodedData) {
+    <!-- Lightbox for full-size images -->
+    <div id="lightbox" class="lightbox">
+        <button class="lightbox-close" onclick="closeLightbox()">×</button>
+        <button class="lightbox-nav lightbox-prev" onclick="navigateLightbox(-1)">‹</button>
+        <img id="lightbox-image" src="" alt="Full size image">
+        <button class="lightbox-nav lightbox-next" onclick="navigateLightbox(1)">›</button>
+    </div>
+
+    <script type="module">
+        import { auth, db, onAuthStateChanged, collection, query, where, getDocs } from './firebase-config.js';
+
+        let currentImages = [];
+        let currentImageIndex = 0;
+
+        // Wait for auth and then load location details
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) {
+                window.location.href = '/Interactive-Map.io/login.html';
+                return;
+            }
+
+            // Parse URL query param for data
+            const urlParams = new URLSearchParams(window.location.search);
+            const encodedData = urlParams.get('data');
+
+            if (encodedData) {
+                try {
+                    const locationData = JSON.parse(decodeURIComponent(encodedData));
+
+                    // Load full location data from Firestore to get images
+                    await loadLocationDetails(locationData);
+                } catch (error) {
+                    console.error('Error parsing location data:', error);
+                    document.getElementById('details').innerHTML = '<div class="error">Error loading location details. <a href="index.html">Return to map</a></div>';
+                }
+            } else {
+                document.getElementById('details').innerHTML = '<div class="error">No location data found. <a href="index.html">Return to map</a></div>';
+            }
+        });
+
+        async function loadLocationDetails(locationData) {
             try {
-                const locationData = JSON.parse(decodeURIComponent(encodedData));
-                
-                // Build HTML for details
-                let html = `<h1>${locationData.title}</h1>`;
-                
-                html += `<div class="detail"><strong>Latitude:</strong> ${locationData.lat}</div>`;
-                html += `<div class="detail"><strong>Longitude:</strong> ${locationData.lon}</div>`;
-                
-                if (locationData.address !== 'N/A') {
-                    html += `<div class="detail"><strong>Address:</strong><br>${locationData.address}</div>`;
+                // Query Firestore to get the full location data including images
+                const locationsRef = collection(db, 'locations');
+                const q = query(locationsRef,
+                    where('latitude', '==', parseFloat(locationData.lat)),
+                    where('longitude', '==', parseFloat(locationData.lon))
+                );
+
+                const querySnapshot = await getDocs(q);
+
+                if (!querySnapshot.empty) {
+                    const locationDoc = querySnapshot.docs[0];
+                    const fullLocationData = locationDoc.data();
+
+                    // Build HTML for details
+                    let html = `<h1>${fullLocationData.title}</h1>`;
+
+                    html += `<div class="detail"><strong>Latitude:</strong> ${locationData.lat}</div>`;
+                    html += `<div class="detail"><strong>Longitude:</strong> ${locationData.lon}</div>`;
+
+                    if (fullLocationData.address) {
+                        html += `<div class="detail"><strong>Address:</strong><br>${fullLocationData.address}</div>`;
+                    }
+
+                    if (fullLocationData.userId) {
+                        // Get username from user profile
+                        try {
+                            const userDoc = await getDocs(query(collection(db, 'users'), where('__name__', '==', fullLocationData.userId)));
+                            if (!userDoc.empty) {
+                                const userData = userDoc.docs[0].data();
+                                const username = userData.displayName || userData.email || 'Unknown User';
+                                html += `<div class="detail"><strong>User:</strong> ${username}</div>`;
+                            }
+                        } catch (error) {
+                            console.error('Error loading user:', error);
+                        }
+                    }
+
+                    if (fullLocationData.notes) {
+                        html += `<div class="detail"><strong>Notes:</strong><br>${fullLocationData.notes}</div>`;
+                    }
+
+                    // Add Google Street View link
+                    const streetViewUrl = `http://maps.google.com/maps?q=&layer=c&cbll=${locationData.lat},${locationData.lon}`;
+                    html += `<a href="${streetViewUrl}" target="_blank" class="streetview-link">View in Google Street View</a>`;
+
+                    document.getElementById('details').innerHTML = html;
+
+                    // Handle images
+                    if (fullLocationData.images && fullLocationData.images.length > 0) {
+                        currentImages = fullLocationData.images;
+                        renderImageGallery();
+                    }
+                } else {
+                    // Fallback to basic display if Firestore query fails
+                    let html = `<h1>${locationData.title}</h1>`;
+                    html += `<div class="detail"><strong>Latitude:</strong> ${locationData.lat}</div>`;
+                    html += `<div class="detail"><strong>Longitude:</strong> ${locationData.lon}</div>`;
+
+                    if (locationData.address !== 'N/A') {
+                        html += `<div class="detail"><strong>Address:</strong><br>${locationData.address}</div>`;
+                    }
+
+                    if (locationData.user !== 'N/A') {
+                        html += `<div class="detail"><strong>User:</strong> ${locationData.user}</div>`;
+                    }
+
+                    if (locationData.notes !== 'N/A') {
+                        html += `<div class="detail"><strong>Notes:</strong><br>${locationData.notes}</div>`;
+                    }
+
+                    // Add Google Street View link
+                    const streetViewUrl = `http://maps.google.com/maps?q=&layer=c&cbll=${locationData.lat},${locationData.lon}`;
+                    html += `<a href="${streetViewUrl}" target="_blank" class="streetview-link">View in Google Street View</a>`;
+
+                    document.getElementById('details').innerHTML = html;
                 }
-                
-                if (locationData.user !== 'N/A') {
-                    html += `<div class="detail"><strong>User:</strong> ${locationData.user}</div>`;
-                }
-                
-                if (locationData.notes !== 'N/A') {
-                    html += `<div class="detail"><strong>Notes:</strong><br>${locationData.notes}</div>`;
-                }
-                
-                // Add Google Street View link
-                const streetViewUrl = `http://maps.google.com/maps?q=&layer=c&cbll=${locationData.lat},${locationData.lon}`;
-                html += `<a href="${streetViewUrl}" target="_blank" class="streetview-link">View in Google Street View</a>`;
-                
-                document.getElementById('details').innerHTML = html;
             } catch (error) {
-                console.error('Error parsing location data:', error);
+                console.error('Error loading location details:', error);
                 document.getElementById('details').innerHTML = '<div class="error">Error loading location details. <a href="index.html">Return to map</a></div>';
             }
-        } else {
-            document.getElementById('details').innerHTML = '<div class="error">No location data found. <a href="index.html">Return to map</a></div>';
         }
+
+        function renderImageGallery() {
+            if (currentImages.length === 0) {
+                return;
+            }
+
+            const galleryContainer = document.getElementById('image-gallery');
+            galleryContainer.style.display = 'block';
+
+            let galleryHtml = '<div class="carousel-container">';
+
+            // Carousel slides
+            currentImages.forEach((image, index) => {
+                const activeClass = index === 0 ? ' active' : '';
+                galleryHtml += `
+                    <div class="carousel-slide${activeClass}" data-index="${index}">
+                        <img src="${image.url}" alt="Location image ${index + 1}" onclick="openLightbox(${index})">
+                    </div>
+                `;
+            });
+
+            // Navigation buttons (only if more than 1 image)
+            if (currentImages.length > 1) {
+                galleryHtml += `
+                    <button class="carousel-nav carousel-prev" onclick="navigateCarousel(-1)">‹</button>
+                    <button class="carousel-nav carousel-next" onclick="navigateCarousel(1)">›</button>
+                `;
+
+                // Indicators
+                galleryHtml += '<div class="carousel-indicators">';
+                currentImages.forEach((_, index) => {
+                    const activeClass = index === 0 ? ' active' : '';
+                    galleryHtml += `<div class="indicator${activeClass}" onclick="goToSlide(${index})"></div>`;
+                });
+                galleryHtml += '</div>';
+            }
+
+            galleryHtml += '</div>';
+
+            // Thumbnails
+            if (currentImages.length > 1) {
+                galleryHtml += '<div class="thumbnails">';
+                currentImages.forEach((image, index) => {
+                    const activeClass = index === 0 ? ' active' : '';
+                    galleryHtml += `
+                        <div class="thumbnail${activeClass}" onclick="goToSlide(${index})">
+                            <img src="${image.url}" alt="Thumbnail ${index + 1}">
+                        </div>
+                    `;
+                });
+                galleryHtml += '</div>';
+            }
+
+            galleryContainer.innerHTML = galleryHtml;
+        }
+
+        // Carousel navigation functions
+        window.navigateCarousel = function(direction) {
+            const slides = document.querySelectorAll('.carousel-slide');
+            const indicators = document.querySelectorAll('.indicator');
+            const thumbnails = document.querySelectorAll('.thumbnail');
+
+            if (slides.length === 0) return;
+
+            // Remove active classes
+            slides.forEach(slide => slide.classList.remove('active'));
+            indicators.forEach(indicator => indicator.classList.remove('active'));
+            thumbnails.forEach(thumbnail => thumbnail.classList.remove('active'));
+
+            // Calculate new index
+            currentImageIndex = (currentImageIndex + direction + slides.length) % slides.length;
+
+            // Add active classes
+            slides[currentImageIndex].classList.add('active');
+            if (indicators[currentImageIndex]) indicators[currentImageIndex].classList.add('active');
+            if (thumbnails[currentImageIndex]) thumbnails[currentImageIndex].classList.add('active');
+        };
+
+        window.goToSlide = function(index) {
+            const slides = document.querySelectorAll('.carousel-slide');
+            const indicators = document.querySelectorAll('.indicator');
+            const thumbnails = document.querySelectorAll('.thumbnail');
+
+            if (index < 0 || index >= slides.length) return;
+
+            // Remove active classes
+            slides.forEach(slide => slide.classList.remove('active'));
+            indicators.forEach(indicator => indicator.classList.remove('active'));
+            thumbnails.forEach(thumbnail => thumbnail.classList.remove('active'));
+
+            // Set new active slide
+            currentImageIndex = index;
+            slides[currentImageIndex].classList.add('active');
+            if (indicators[currentImageIndex]) indicators[currentImageIndex].classList.add('active');
+            if (thumbnails[currentImageIndex]) thumbnails[currentImageIndex].classList.add('active');
+        };
+
+        // Lightbox functions
+        window.openLightbox = function(index) {
+            currentImageIndex = index;
+            const lightbox = document.getElementById('lightbox');
+            const lightboxImage = document.getElementById('lightbox-image');
+
+            lightboxImage.src = currentImages[index].url;
+            lightbox.classList.add('active');
+        };
+
+        window.closeLightbox = function() {
+            document.getElementById('lightbox').classList.remove('active');
+        };
+
+        window.navigateLightbox = function(direction) {
+            const newIndex = (currentImageIndex + direction + currentImages.length) % currentImages.length;
+            openLightbox(newIndex);
+        };
+
+        // Close lightbox on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeLightbox();
+            } else if (e.key === 'ArrowLeft') {
+                navigateLightbox(-1);
+            } else if (e.key === 'ArrowRight') {
+                navigateLightbox(1);
+            }
+        });
     </script>
 </body>
 </html>
