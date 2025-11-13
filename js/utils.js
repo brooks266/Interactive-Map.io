@@ -15,9 +15,9 @@ export function showLoading(show = true) {
         overlay.classList.toggle('active', show);
     }
     
-    // Disable/enable all buttons and inputs while loading
+    // Disable/enable all buttons and inputs while loading (except search)
     const buttons = document.querySelectorAll('button');
-    const inputs = document.querySelectorAll('input:not([disabled])');
+    const inputs = document.querySelectorAll('input:not([disabled]):not(#search)');
     const textareas = document.querySelectorAll('textarea');
     
     buttons.forEach(btn => btn.disabled = show);
@@ -325,3 +325,4 @@ export function debounce(func, wait = 300) {
         timeout = setTimeout(later, wait);
     };
 }
+
