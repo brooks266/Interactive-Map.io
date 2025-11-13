@@ -54,6 +54,9 @@ document.addEventListener('DOMContentLoaded', function() {
             zoomToBoundsOnClick: true
         });
 
+         // Add marker cluster group to map once during initialization
+         map.addLayer(markers);
+
         // Try to get user's location and center map on it
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(
@@ -121,6 +124,9 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadLocationsFromFirestore() {
         showLoading(true);
         try {
+                  // Clear existing markers from the cluster group
+                  markers.clearLayers();
+                 
             const locationsRef = collection(db, 'locations');
             const q = query(locationsRef, orderBy('createdAt', 'desc'));
             const querySnapshot = await getDocs(q);
@@ -187,7 +193,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Add remaining markers
             currentBatch.forEach(obj => markers.addLayer(obj.marker));
 
-            map.addLayer(markers);
             console.log(`${validMarkers} markers loaded from Firestore.`);
         } catch (error) {
             console.error('Error loading locations:', error);
@@ -481,3 +486,4 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('new-address').value = '';
     }
 });
+
