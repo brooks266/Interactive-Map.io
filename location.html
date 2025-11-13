@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Location Details</title>
+    <link rel="manifest" href="/Interactive-Map.io/manifest.json">
+    <meta name="theme-color" content="#007cba">
+    <link rel="stylesheet" href="./css/common.css">
+    <style>
+        /* Page-specific styles only */
+        h1 { 
+            color: #333; 
+            text-align: center; 
+        }
+        
+        .detail { 
+            margin-bottom: 15px; 
+        }
+        
+        .detail strong { 
+            color: #007cba; 
+        }
+        
+        .back-link, .streetview-link { 
+            display: inline-block; 
+            margin: 10px 5px; 
+            padding: 10px 15px; 
+            text-decoration: none; 
+            border-radius: 4px; 
+            font-weight: bold;
+        }
+        
+        .back-link { 
+            background: #007cba; 
+            color: white; 
+        }
+        
+        .back-link:hover { 
+            background: #005a87; 
+        }
+        
+        .streetview-link { 
+            background: #4285f4; 
+            color: white; 
+        }
+        
+        .streetview-link:hover { 
+            background: #3367d6; 
+        }
+        
+        .error { 
+            color: #d00; 
+            text-align: center; 
+            padding: 20px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Map</a>
+        
+        <div id="details"></div>
+    </div>
+
+    <script>
+        // Parse URL query param for data
+        const urlParams = new URLSearchParams(window.location.search);
+        const encodedData = urlParams.get('data');
+        
+        if (encodedData) {
+            try {
+                const locationData = JSON.parse(decodeURIComponent(encodedData));
+                
+                // Build HTML for details
+                let html = `<h1>${locationData.title}</h1>`;
+                
+                html += `<div class="detail"><strong>Latitude:</strong> ${locationData.lat}</div>`;
+                html += `<div class="detail"><strong>Longitude:</strong> ${locationData.lon}</div>`;
+                
+                if (locationData.address !== 'N/A') {
+                    html += `<div class="detail"><strong>Address:</strong><br>${locationData.address}</div>`;
+                }
+                
+                if (locationData.user !== 'N/A') {
+                    html += `<div class="detail"><strong>User:</strong> ${locationData.user}</div>`;
+                }
+                
+                if (locationData.notes !== 'N/A') {
+                    html += `<div class="detail"><strong>Notes:</strong><br>${locationData.notes}</div>`;
+                }
+                
+                // Add Google Street View link
+                const streetViewUrl = `http://maps.google.com/maps?q=&layer=c&cbll=${locationData.lat},${locationData.lon}`;
+                html += `<a href="${streetViewUrl}" target="_blank" class="streetview-link">View in Google Street View</a>`;
+                
+                document.getElementById('details').innerHTML = html;
+            } catch (error) {
+                console.error('Error parsing location data:', error);
+                document.getElementById('details').innerHTML = '<div class="error">Error loading location details. <a href="index.html">Return to map</a></div>';
+            }
+        } else {
+            document.getElementById('details').innerHTML = '<div class="error">No location data found. <a href="index.html">Return to map</a></div>';
+        }
+    </script>
+</body>
+</html>
