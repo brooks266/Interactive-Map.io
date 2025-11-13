@@ -1,28 +1,28 @@
-   const CACHE_NAME = 'map-app-v5';  // Bump version for cache busting
+  const CACHE_NAME = 'map-app-v6';  // Bump version for cache busting
 const urlsToCache = [
-  '/',
-  '/index.html',
-  '/login.html',
-  '/settings.html',
-  '/location.html',
-  '/manifest.json',
+  '/Interactive-Map.io/',
+  '/Interactive-Map.io/index.html',
+  '/Interactive-Map.io/login.html',
+  '/Interactive-Map.io/settings.html',
+  '/Interactive-Map.io/location.html',
+  '/Interactive-Map.io/manifest.json',
   // CSS files
-  '/css/common.css',
-  '/css/leaflet.css',
-  '/css/MarkerCluster.css',
-  '/css/MarkerCluster.Default.css',
+  '/Interactive-Map.io/css/common.css',
+  '/Interactive-Map.io/css/leaflet.css',
+  '/Interactive-Map.io/css/MarkerCluster.css',
+  '/Interactive-Map.io/css/MarkerCluster.Default.css',
   // JavaScript files
-  '/js/leaflet.js',
-  '/js/leaflet.markercluster.js',
-  '/js/firebase-config.js',
-  '/js/utils.js',
+  '/Interactive-Map.io/js/leaflet.js',
+  '/Interactive-Map.io/js/leaflet.markercluster.js',
+  '/Interactive-Map.io/js/firebase-config.js',
+  '/Interactive-Map.io/js/utils.js',
   // Leaflet marker images
-  '/images/marker-icon.png',
-  '/images/marker-icon-2x.png',
-  '/images/marker-shadow.png',
+  '/Interactive-Map.io/images/marker-icon.png',
+  '/Interactive-Map.io/images/marker-icon-2x.png',
+  '/Interactive-Map.io/images/marker-shadow.png',
   // PWA icons
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
+  '/Interactive-Map.io/icons/icon-192.png',
+  '/Interactive-Map.io/icons/icon-512.png'
 ];
 
    // Install event: Cache core files
@@ -75,7 +75,7 @@ const urlsToCache = [
            }).catch(() => {
             // Offline fallback: Show cached HTML or basic message
             if (event.request.destination === 'document') {
-              return caches.match('/index.html');
+              return caches.match('/Interactive-Map.io/index.html');
             }
              return new Response('Offline: Resource not available.', { status: 503 });
            });
