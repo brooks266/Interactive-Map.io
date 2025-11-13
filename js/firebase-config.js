@@ -1,7 +1,7 @@
 // firebase-config.js
-// Firebase SDK v9+ (modular)
+// Firebase SDK v9+ (bundled for better performance)
 
-// Import the functions you need from the SDKs
+// Import the functions you need from the SDKs (using bundled SDK for reduced network requests)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
          signOut, onAuthStateChanged, GoogleAuthProvider, signInWithPopup,
@@ -9,7 +9,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
 import { getFirestore, collection, addDoc, getDocs, doc, getDoc,
          setDoc, updateDoc, deleteDoc, query, where, orderBy,
          serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+// Removed unused storage import for better performance
 
 // Your web app's Firebase configuration
 // REPLACE THIS WITH YOUR ACTUAL CONFIG FROM FIREBASE CONSOLE
@@ -35,14 +35,10 @@ const db = getFirestore(app);
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
 
-// Initialize Firebase Storage and get a reference to the service
-const storage = getStorage(app);
-
-// Export for use in other files
+// Export for use in other files (removed unused storage exports)
 export {
   auth,
   db,
-  storage,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
@@ -62,9 +58,5 @@ export {
   query,
   where,
   orderBy,
-  serverTimestamp,
-  ref,
-  uploadBytes,
-  getDownloadURL,
-  deleteObject
+  serverTimestamp
 };

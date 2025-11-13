@@ -49,39 +49,80 @@ const urlsToCache = [
      );
    });
 
-   // Fetch event: Cache-first for assets, network-first for dynamic (e.g., email)
+   // Fetch event: Optimized caching strategies
    self.addEventListener('fetch', event => {
-     // Ignore non-GET or non-same-origin (e.g., external APIs like email)
-     if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
+     const url = new URL(event.request.url);
+
+     // Ignore non-GET requests and external domains
+     if (event.request.method !== 'GET' || !url.origin.includes(self.location.origin.split('.')[0])) {
        return;
      }
 
-     event.respondWith(
-       caches.match(event.request)
-         .then(response => {
-           // Return cached version or fetch from network
-           if (response) {
-             return response;
-           }
-           return fetch(event.request).then(fetchResponse => {
-             // Cache successful fetches (except tiles, to avoid staleness)
-             if (event.request.url.includes('openstreetmap.org')) {
-               return fetchResponse;  // Don't cache tiles (dynamic)
-             }
-             return caches.open(CACHE_NAME).then(cache => {
-               cache.put(event.request, fetchResponse.clone());
-               return fetchResponse;
-             });
-           }).catch(() => {
-            // Offline fallback: Show cached HTML or basic message
-            if (event.request.destination === 'document') {
-              return caches.match('/Interactive-Map.io/index.html');
-            }
-             return new Response('Offline: Resource not available.', { status: 503 });
-           });
-         })
-     );
+     // Cache-first strategy for static assets
+     if (event.request.destination === 'style' ||
+         event.request.destination === 'script' ||
+         event.request.destination === 'image' ||
+         event.request.url.includes('.css') ||
+         event.request.url.includes('.js') ||
+         event.request.url.includes('.png') ||
+         event.request.url.includes('.jpg')) {
+       event.respondWith(cacheFirst(event.request));
+       return;
+     }
+
+     // Network-first for HTML pages (to get updates)
+     if (event.request.destination === 'document') {
+       event.respondWith(networkFirst(event.request));
+       return;
+     }
+
+     // Default cache-first for other requests
+     event.respondWith(cacheFirst(event.request));
    });
+
+   // Cache-first strategy: Try cache, then network
+   async function cacheFirst(request) {
+     try {
+       const cachedResponse = await caches.match(request);
+       if (cachedResponse) {
+         return cachedResponse;
+       }
+
+       const networkResponse = await fetch(request);
+       if (networkResponse.ok) {
+         const cache = await caches.open(CACHE_NAME);
+         cache.put(request, networkResponse.clone());
+       }
+       return networkResponse;
+     } catch (error) {
+       console.log('Cache-first failed:', error);
+       // For images, return a placeholder if available
+       if (request.destination === 'image') {
+         return caches.match('/Interactive-Map.io/images/marker-icon.png');
+       }
+       return new Response('Offline: Resource not available.', { status: 503 });
+     }
+   }
+
+   // Network-first strategy: Try network, fallback to cache
+   async function networkFirst(request) {
+     try {
+       const networkResponse = await fetch(request);
+       if (networkResponse.ok) {
+         const cache = await caches.open(CACHE_NAME);
+         cache.put(request, networkResponse.clone());
+       }
+       return networkResponse;
+     } catch (error) {
+       console.log('Network-first failed, trying cache:', error);
+       const cachedResponse = await caches.match(request);
+       if (cachedResponse) {
+         return cachedResponse;
+       }
+       // Fallback to cached index.html for navigation requests
+       return caches.match('/Interactive-Map.io/index.html');
+     }
+   }
    
 
 
