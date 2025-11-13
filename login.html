@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Interactive Map App</title>
-    <link rel="manifest" href="/Interactive-Map.io/manifest.json">
+    <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#007cba">
     <link rel="stylesheet" href="./css/common.css">
     <style>
@@ -150,7 +150,7 @@
         // Check if already logged in
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                window.location.href = '/Interactive-Map.io/index.html';
+                window.location.href = './index.html';
             }
         });
 
@@ -239,7 +239,7 @@
                 
                 // Redirect after 2 seconds
                 setTimeout(() => {
-                    window.location.href = '/Interactive-Map.io/index.html';
+                    window.location.href = './index.html';
                 }, 2000);
 
             } catch (error) {

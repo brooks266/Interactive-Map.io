@@ -154,7 +154,7 @@ export function formatFirestoreDate(timestamp, includeTime = true) {
  * @param {string} redirectUrl - URL to redirect to if not authenticated
  * @returns {Promise} Promise that resolves with the current user or redirects
  */
-export function requireAuth(auth, redirectUrl = '/Interactive-Map.io/login.html') {
+export function requireAuth(auth, redirectUrl = './login.html') {
     return new Promise((resolve, reject) => {
         const unsubscribe = auth.onAuthStateChanged((user) => {
             unsubscribe(); // Unsubscribe after first check
