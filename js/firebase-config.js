@@ -14,7 +14,7 @@ import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "http
 // Your web app's Firebase configuration
 // REPLACE THIS WITH YOUR ACTUAL CONFIG FROM FIREBASE CONSOLE
 const firebaseConfig = {
-    apiKey: API_KEY,
+    apiKey: ${{ secrets.FIREBASE_API }},
     authDomain: "interactive-map-app-b485a.firebaseapp.com",
     projectId: "interactive-map-app-b485a",
     storageBucket: "interactive-map-app-b485a.firebasestorage.app",
@@ -68,5 +68,6 @@ export {
   getDownloadURL,
   deleteObject
 };
+
 
 
