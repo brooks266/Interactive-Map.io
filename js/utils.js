@@ -55,8 +55,7 @@ export function showMessage(text, type = 'info', duration = 5000) {
 export function hideMessage() {
     const messageEl = document.getElementById('message');
     if (messageEl) {
-        messageEl.classList.remove('active');
-        messageEl.style.display = 'none';
+        messageEl.classList.remove('active', 'success', 'error', 'info', 'warning');
     }
 }
 
@@ -192,6 +191,8 @@ export function getFirebaseErrorMessage(error, context = '') {
     // Authentication errors
     if (errorCode.startsWith('auth/')) {
         switch (errorCode) {
+            case 'auth/invalid-credential':
+                return 'Invalid email or password. Please try again.';
             case 'auth/user-not-found':
                 return 'No account found with this email.';
             case 'auth/wrong-password':
@@ -325,4 +326,5 @@ export function debounce(func, wait = 300) {
         timeout = setTimeout(later, wait);
     };
 }
+
 
