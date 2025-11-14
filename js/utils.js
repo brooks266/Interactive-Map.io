@@ -14,42 +14,6 @@ export function showLoading(show = true) {
     if (overlay) {
         overlay.classList.toggle('active', show);
     }
-    
-   // Disable/enable all buttons and inputs while loading (except search and modal inputs)
-    const buttons = document.querySelectorAll('button:not(.modal button)');
-    const inputs = document.querySelectorAll('input:not(#search):not(.modal input)');
-    const textareas = document.querySelectorAll('textarea:not(.modal textarea)');
-
-    buttons.forEach(btn => btn.disabled = show);
-    inputs.forEach(input => {
-        // Only disable inputs that aren't already permanently disabled
-        if (show) {
-            // Mark if this input was already disabled before we touched it
-            if (!input.disabled) {
-                input.disabled = true;
-                input.dataset.wasEnabled = 'true';
-            }
-        } else {
-            // Only re-enable inputs that we disabled
-            if (input.dataset.wasEnabled === 'true') {
-                input.disabled = false;
-                delete input.dataset.wasEnabled;
-            }
-        }
-    });
-    textareas.forEach(textarea => {
-        if (show) {
-            if (!textarea.disabled) {
-                textarea.disabled = true;
-                textarea.dataset.wasEnabled = 'true';
-            }
-        } else {
-            if (textarea.dataset.wasEnabled === 'true') {
-                textarea.disabled = false;
-                delete textarea.dataset.wasEnabled;
-            }
-        }
-    });
 }
 
 /**
@@ -353,6 +317,7 @@ export function debounce(func, wait = 300) {
         timeout = setTimeout(later, wait);
     };
 }
+
 
 
 
