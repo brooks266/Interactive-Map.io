@@ -71,7 +71,7 @@
 
     <script type="module">
         import { auth, db, onAuthStateChanged, doc, getDoc } from './js/firebase-config.js';
-        import { showLoading, showError, requireAuth } from './js/utils.js';
+        import { showLoading, showError } from './js/utils.js';
 
         // Check authentication
         onAuthStateChanged(auth, async (user) => {
@@ -146,3 +146,4 @@
     </script>
 </body>
 </html>
+
