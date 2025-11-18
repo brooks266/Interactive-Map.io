@@ -7,7 +7,6 @@
     <link rel="manifest" href="./manifest.json">
     <meta name="theme-color" content="#007cba">
     <link rel="stylesheet" href="./css/common.css">
-    <meta name="google-adsense-account" content="ca-pub-4923804767674808">
     <style>
         /* Page-specific styles only */
         body { 
@@ -17,20 +16,7 @@
         }
         
         .back-btn {
-            background: #007cba;
-            color: white;
-            border: none;
-            padding: 10px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 14px;
-            text-decoration: none;
-            display: inline-block;
             margin-bottom: 20px;
-        }
-        
-        .back-btn:hover {
-            background: #005a87;
         }
         
         .profile-card {
@@ -80,8 +66,6 @@
             position: absolute;
             bottom: 0;
             right: 0;
-            background: #007cba;
-            color: white;
             border: 2px solid white;
             border-radius: 50%;
             width: 36px;
@@ -89,13 +73,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
             font-size: 18px;
-            transition: background 0.3s;
-        }
-        
-        .change-picture-btn:hover {
-            background: #005a87;
+            padding: 0;
         }
         
         .picture-upload-section {
@@ -139,16 +118,9 @@
         .file-input-label {
             display: inline-block;
             padding: 10px 20px;
-            background: #007cba;
-            color: white;
             border-radius: 4px;
             cursor: pointer;
             font-size: 14px;
-            transition: background 0.3s;
-        }
-        
-        .file-input-label:hover {
-            background: #005a87;
         }
         
         .upload-actions {
@@ -305,7 +277,7 @@
 <body>
     <div class="container">
         <div class="profile-card">
-            <a href="./index.html" class="back-btn" id="back-btn">← Back to Map</a>
+            <a href="./index.html" class="btn btn-primary back-btn" id="back-btn">← Back to Map</a>
     
             <div id="message" class="message"></div>
             <div id="loading" class="loading">Loading...</div>
@@ -313,7 +285,7 @@
             <div class="profile-header">
                 <div class="profile-picture-container">
                     <div class="profile-icon" id="profile-icon">?</div>
-                    <button class="change-picture-btn" id="change-picture-btn" style="display: none;" title="Change profile picture">📷</button>
+                    <button class="btn btn-primary change-picture-btn" id="change-picture-btn" style="display: none;" title="Change profile picture">📷</button>
                 </div>
                 <h2 class="username-display" id="username-display">Loading...</h2>
                 <p class="email-display" id="email-display"></p>
@@ -333,12 +305,12 @@
                 
                 <div class="file-input-wrapper">
                     <input type="file" id="profile-picture-input" accept="image/*" />
-                    <label for="profile-picture-input" class="file-input-label">Choose Image</label>
+                    <label for="profile-picture-input" class="btn btn-primary file-input-label">Choose Image</label>
                 </div>
                 
                 <div class="upload-actions">
-                    <button type="button" class="btn btn-primary" id="upload-picture-btn" disabled>Upload Picture</button>
-                    <button type="button" class="btn btn-secondary" id="cancel-upload-btn">Cancel</button>
+                    <button type="button" class="btn btn-secondary" id="upload-picture-btn" disabled>Upload Picture</button>
+                    <button type="button" class="btn btn-primary" id="cancel-upload-btn">Cancel</button>
                     <button type="button" class="btn btn-danger" id="remove-picture-btn" style="display: none;">Remove Picture</button>
                 </div>
             </div>
@@ -361,8 +333,8 @@
                 </div>
                 
                 <div class="btn-container">
-                    <button type="submit" class="btn btn-primary" id="save-btn">Save Changes</button>
-                    <button type="button" class="btn btn-secondary" id="reset-btn">Reset</button>
+                    <button type="submit" class="btn btn-secondary" id="save-btn">Save Changes</button>
+                    <button type="button" class="btn btn-primary" id="reset-btn">Reset</button>
                 </div>
             </form>
 
@@ -394,7 +366,7 @@
         
         <div class="logout-section" id="logout-section">
             <p>Ready to leave?</p>
-            <button class="btn-logout" id="logout-btn">Logout</button>
+            <button class="btn btn-danger" id="logout-btn">Logout</button>
         </div>
     </div>
 
@@ -844,4 +816,3 @@
     </script>
 </body>
 </html>
-
