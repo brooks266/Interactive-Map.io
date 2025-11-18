@@ -10,6 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="msapplication-TileImage" content="./icons/icon-192.png">
+    <meta name="google-adsense-account" content="ca-pub-4923804767674808">
 
     <!-- Preconnect to external domains for faster loading -->
     <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
@@ -83,8 +84,11 @@
             height: 40px;
             background: #ccc;
             color: #333;
+            border: none;
             border-radius: 50%;
             font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
             flex-shrink: 0;
         }
         
@@ -94,17 +98,24 @@
         }
         
         #settings-btn {
+            padding: 10px 15px;
+            background: #6c757d;
+            color: white;
+            border: none;
             border-radius: 20px;
+            cursor: pointer;
             font-size: 14px;
             white-space: nowrap;
             flex-shrink: 0;
         }
         
+        #settings-btn:hover {
+            background: #5a6268;
+        }
+        
         @media (max-width: 480px) {
             #search-container {
-                display: flex;
                 flex-direction: column;
-                gap: 10px;
                 min-width: 260px;
                 padding: 15px;
                 bottom: 10px;
@@ -112,7 +123,6 @@
 
             #stacker {
                 display: flex;
-                flex-direction: row;
                 gap: 10px;
             }
             
@@ -122,17 +132,7 @@
             
             #add-btn, #settings-btn {
                 border-radius: 20px;
-                text-align: center;
             }
-        }
-        
-        /* Modal-specific overrides */
-        .modal h3 { 
-            margin-top: 0; 
-        }
-        
-        .modal button { 
-            margin: 5px; 
         }
         
         #offline-message { 
@@ -156,56 +156,20 @@
 
         .popup-actions button {
             padding: 5px 10px;
-            font-size: 12px;
-        }
-
-        /* Image upload styles */
-        .image-upload-section {
-            margin: 15px 0;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 4px;
-        }
-
-        .image-upload-section label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #333;
-        }
-
-        .image-upload-section input[type="file"] {
-            display: block;
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background: white;
-        }
-
-        .image-preview {
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        .image-preview img {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .image-preview .remove-preview {
-            display: inline-block;
-            margin-top: 8px;
-            padding: 5px 10px;
-            background: #dc3545;
-            color: white;
             border: none;
             border-radius: 3px;
             cursor: pointer;
             font-size: 12px;
+        }
+
+        .popup-edit {
+            background: #007cba;
+            color: white;
+        }
+
+        .popup-delete {
+            background: #dc3545;
+            color: white;
         }
 
         .current-image {
@@ -239,8 +203,8 @@
     <div id="search-container">
         <input type="text" id="search" placeholder="Search by title, notes, address, or user..." />
         <div id="stacker">
-        <button id="add-btn" class="btn" title="Add New Location">+</button>
-            <button id="settings-btn" class="btn btn-primary">Settings</button>
+            <button id="add-btn" title="Add New Location">+</button>
+            <button id="settings-btn">Settings</button>
         </div>
     </div>
     
@@ -272,8 +236,8 @@
                 <div id="new-image-preview" class="image-preview"></div>
             </div>
             
-            <button class="btn btn-secondary" id="submit-location-btn">Add Location</button>
-            <button class="btn btn-primary" id="cancel-location-btn">Cancel</button>
+            <button class="btn-primary" id="submit-location-btn">Add Location</button>
+            <button class="btn-secondary" id="cancel-location-btn">Cancel</button>
         </div>
     </div>
 
@@ -294,12 +258,13 @@
                 <button type="button" class="btn-secondary" id="remove-image-btn" style="display: none; margin-top: 10px;">Remove Image</button>
             </div>
             
-            <button class="btn btn-secondary" id="update-location-btn">Update Location</button>
-            <button class="btn btn-danger" id="delete-location-btn">Delete Location</button>
-            <button class="btn btn-primary" id="cancel-edit-btn">Cancel</button>
+            <button class="btn-primary" id="update-location-btn">Update Location</button>
+            <button class="btn-danger" id="delete-location-btn">Delete Location</button>
+            <button class="btn-secondary" id="cancel-edit-btn">Cancel</button>
         </div>
     </div>
 
     <script type="module" src="./js/index.js"></script>
 </body>
 </html>
+

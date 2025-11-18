@@ -1,5 +1,19 @@
 /* Common Styles for Interactive Map Application */
-/* Shared across all pages to reduce duplication */
+
+/* ===== RESET & BASE ===== */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
+    background-color: #f9f9f9;
+}
+
+.container {
+    max-width: 600px;
+    width: 90%;
+    margin: 0 auto;
+    padding: 30px 20px;
+}
 
 /* ===== BUTTONS ===== */
 .btn {
@@ -10,9 +24,6 @@
     font-size: 16px;
     font-weight: bold;
     transition: background 0.3s, opacity 0.3s;
-    text-decoration: none;
-    display: inline-block;
-    text-align: center;
 }
 
 .btn:disabled {
@@ -21,7 +32,6 @@
     opacity: 0.6;
 }
 
-/* Blue - Login, Signup, Google Login, Cancel, Back, View, Settings */
 .btn-primary {
     background: #007cba;
     color: white;
@@ -31,17 +41,15 @@
     background: #005a87;
 }
 
-/* Green - Update, Edit, Submit, Add, Save */
 .btn-secondary {
-    background: #28a745;
+    background: #6c757d;
     color: white;
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: #218838;
+    background: #5a6268;
 }
 
-/* Red - Logout, Delete, Remove */
 .btn-danger {
     background: #dc3545;
     color: white;
@@ -83,6 +91,10 @@
     color: #333;
 }
 
+.modal button {
+    margin: 5px;
+}
+
 /* ===== FORMS ===== */
 .form-group {
     margin-bottom: 20px;
@@ -99,6 +111,7 @@
 input[type="text"],
 input[type="email"],
 input[type="password"],
+input[type="file"],
 textarea {
     width: 100%;
     padding: 12px;
@@ -152,19 +165,7 @@ textarea {
     border: 1px solid #f5c6cb;
 }
 
-.message.info {
-    background: #e3f2fd;
-    color: #1976d2;
-    border: 1px solid #bbdefb;
-}
-
-.message.warning {
-    background: #fff3cd;
-    color: #856404;
-    border: 1px solid #ffeaa7;
-}
-
-/* ===== LOADING OVERLAY ===== */
+/* ===== LOADING ===== */
 .loading-overlay {
     display: none;
     position: fixed;
@@ -196,7 +197,6 @@ textarea {
     100% { transform: rotate(360deg); }
 }
 
-/* Inline loading indicator (for smaller contexts) */
 .loading {
     display: none;
     text-align: center;
@@ -207,21 +207,6 @@ textarea {
 
 .loading.active {
     display: block;
-}
-
-/* ===== COMMON LAYOUT ===== */
-body {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, sans-serif;
-    background-color: #f9f9f9;
-}
-
-.container {
-    max-width: 600px;
-    width: 90%;
-    margin: 0 auto;
-    padding: 30px 20px;
 }
 
 /* ===== TABS ===== */
@@ -240,7 +225,7 @@ body {
     font-size: 16px;
     color: #666;
     border-bottom: 3px solid transparent;
-    transition: all 0.3s;
+    transition: color 0.3s, border-color 0.3s;
 }
 
 .tab.active {
@@ -278,6 +263,45 @@ body {
     font-size: 14px;
 }
 
+/* ===== IMAGE UPLOAD ===== */
+.image-upload-section {
+    margin: 15px 0;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+
+.image-upload-section label {
+    display: block;
+    font-weight: bold;
+    margin-bottom: 8px;
+    color: #333;
+}
+
+.image-preview {
+    margin-top: 10px;
+    text-align: center;
+}
+
+.image-preview img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.image-preview .remove-preview {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 5px 10px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
 /* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
     .container {
@@ -292,6 +316,7 @@ body {
     input[type="text"],
     input[type="email"],
     input[type="password"],
+    input[type="file"],
     textarea {
         font-size: 16px; /* Prevent zoom on iOS */
     }
