@@ -9,7 +9,7 @@ import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
 import { getFirestore, collection, addDoc, getDocs, doc, getDoc,
          setDoc, updateDoc, deleteDoc, query, where, orderBy,
          serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-// Removed unused storage import for better performance
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 // Your web app's Firebase configuration
 // REPLACE THIS WITH YOUR ACTUAL CONFIG FROM FIREBASE CONSOLE
@@ -32,13 +32,21 @@ const auth = getAuth(app);
 // Initialize Cloud Firestore and get a reference to the service
 const db = getFirestore(app);
 
+// Initialize Firebase Storage and get a reference to the service
+const storage = getStorage(app);
+
 // Google Auth Provider
 const googleProvider = new GoogleAuthProvider();
 
-// Export for use in other files (removed unused storage exports)
+// Export for use in other files
 export {
   auth,
   db,
+  storage,
+  ref,
+  uploadBytes,
+  getDownloadURL,
+  deleteObject,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
