@@ -74,6 +74,17 @@
             font-style: italic;
             padding: 20px;
         }
+
+        .detail a {
+            color: #007cba;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+
+        .detail a:hover {
+            text-decoration: underline;
+            color: #005a87;
+        }
     </style>
 </head>
 <body>
@@ -149,7 +160,7 @@
                         html += `<div class="detail"><strong>Address:</strong><br>${data.address}</div>`;
                     }
 
-                    html += `<div class="detail"><strong>User:</strong> ${username}</div>`;
+                    html += `<div class="detail"><strong>User:</strong> <a href="settings.html?userId=${data.userId}">${username}</a></div>`;
 
                     if (data.notes) {
                         html += `<div class="detail"><strong>Notes:</strong><br>${data.notes}</div>`;
