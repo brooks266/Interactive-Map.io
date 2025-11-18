@@ -154,6 +154,26 @@
             color: #007cba;
             font-weight: bold;
         }
+
+        /* Read-only mode styles */
+        .read-only-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+
+        .read-only-info .info-label {
+            font-weight: bold;
+            color: #007cba;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .read-only-info .info-value {
+            color: #333;
+            word-wrap: break-word;
+        }
         
         @media (max-width: 480px) {
             .container {
@@ -173,7 +193,7 @@
 <body>
     <div class="container">
         <div class="profile-card">
-            <a href="./index.html" class="back-btn">← Back to Map</a>
+            <a href="./index.html" class="back-btn" id="back-btn">← Back to Map</a>
     
             <div id="message" class="message"></div>
             <div id="loading" class="loading">Loading...</div>
@@ -184,7 +204,8 @@
                 <p class="email-display" id="email-display"></p>
             </div>
             
-            <form id="profile-form">
+            <!-- Editable form (shown only for own profile) -->
+            <form id="profile-form" style="display: none;">
                 <div class="form-group">
                     <label for="displayName">Display Name</label>
                     <input type="text" id="displayName" placeholder="Enter your display name" />
@@ -205,10 +226,28 @@
                     <button type="button" class="btn btn-secondary" id="reset-btn">Reset</button>
                 </div>
             </form>
+
+            <!-- Read-only view (shown for other users' profiles) -->
+            <div id="profile-readonly" style="display: none;">
+                <div class="read-only-info">
+                    <span class="info-label">Display Name</span>
+                    <span class="info-value" id="readonly-displayName">-</span>
+                </div>
+                
+                <div class="read-only-info">
+                    <span class="info-label">Email</span>
+                    <span class="info-value" id="readonly-email">-</span>
+                </div>
+                
+                <div class="read-only-info">
+                    <span class="info-label">Bio</span>
+                    <span class="info-value" id="readonly-bio">No bio provided</span>
+                </div>
+            </div>
         </div>
 
         <div class="stats-section">
-            <h3>Your Statistics</h3>
+            <h3 id="stats-title">Your Statistics</h3>
             <div class="stat-item">
                 <span class="stat-label">Locations Created:</span>
                 <span class="stat-value" id="location-count">0</span>
@@ -219,7 +258,7 @@
             </div>
         </div>
         
-        <div class="logout-section">
+        <div class="logout-section" id="logout-section">
             <p>Ready to leave?</p>
             <button class="btn-logout" id="logout-btn">Logout</button>
         </div>
@@ -235,6 +274,8 @@
         let currentUser = null;
         let currentUserData = null;
         let originalData = null;
+        let viewingUserId = null;
+        let isOwnProfile = true;
         const MESSAGE_TIMEOUT = 5000;
 
         // Session Check
@@ -245,64 +286,133 @@
             }
 
             currentUser = user;
-            await loadUserProfile();
-            await loadUserStats();
+            
+            // Check if viewing another user's profile
+            const urlParams = new URLSearchParams(window.location.search);
+            viewingUserId = urlParams.get('userId');
+            
+            if (viewingUserId && viewingUserId !== currentUser.uid) {
+                // Viewing another user's profile
+                isOwnProfile = false;
+                document.title = 'User Profile - Interactive Map App';
+                await loadUserProfile(viewingUserId);
+            } else {
+                // Viewing own profile
+                isOwnProfile = true;
+                document.title = 'Profile & Settings - Interactive Map App';
+                await loadUserProfile(currentUser.uid);
+            }
+            
+            await loadUserStats(viewingUserId || currentUser.uid);
+            
+            // Update UI based on profile ownership
+            updateUIForProfileMode();
         });
 
+        // Update UI based on whether viewing own profile or another user's
+        function updateUIForProfileMode() {
+            const profileForm = document.getElementById('profile-form');
+            const profileReadonly = document.getElementById('profile-readonly');
+            const logoutSection = document.getElementById('logout-section');
+            const statsTitle = document.getElementById('stats-title');
+            const backBtn = document.getElementById('back-btn');
+            
+            if (isOwnProfile) {
+                // Show editable form
+                profileForm.style.display = 'block';
+                profileReadonly.style.display = 'none';
+                logoutSection.style.display = 'block';
+                statsTitle.textContent = 'Your Statistics';
+                backBtn.textContent = '← Back to Map';
+            } else {
+                // Show read-only view
+                profileForm.style.display = 'none';
+                profileReadonly.style.display = 'block';
+                logoutSection.style.display = 'none';
+                statsTitle.textContent = 'User Statistics';
+                backBtn.textContent = '← Back';
+                
+                // Check if coming from location page
+                const referrer = document.referrer;
+                if (referrer && referrer.includes('location.html')) {
+                    backBtn.href = referrer;
+                }
+            }
+        }
+
         // Load user profile
-        async function loadUserProfile() {
+        async function loadUserProfile(userId) {
             showLoading(true);
             
             try {
-                const userDocRef = doc(db, 'users', currentUser.uid);
+                const userDocRef = doc(db, 'users', userId);
                 const userDoc = await getDoc(userDocRef);
                 
                 if (userDoc.exists()) {
                     currentUserData = userDoc.data();
                     originalData = { ...currentUserData };
                 } else {
-                    // User profile doesn't exist - create a default one
-                    console.log('User profile not found, creating default profile...');
-                    currentUserData = {
-                        displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-                        email: currentUser.email || '',
-                        bio: '',
-                        createdAt: serverTimestamp(),
-                        lastLogin: serverTimestamp()
-                    };
-                    
-                    try {
-                        await setDoc(userDocRef, currentUserData);
-                        console.log('Default user profile created successfully');
-                    } catch (createError) {
-                        console.error('Error creating default profile:', createError);
-                        showError('Failed to create user profile. Some features may be limited.');
+                    if (isOwnProfile) {
+                        // User profile doesn't exist - create a default one
+                        console.log('User profile not found, creating default profile...');
+                        currentUserData = {
+                            displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+                            email: currentUser.email || '',
+                            bio: '',
+                            createdAt: serverTimestamp(),
+                            lastLogin: serverTimestamp()
+                        };
+                        
+                        try {
+                            await setDoc(userDocRef, currentUserData);
+                            console.log('Default user profile created successfully');
+                        } catch (createError) {
+                            console.error('Error creating default profile:', createError);
+                            showError('Failed to create user profile. Some features may be limited.');
+                        }
+                        
+                        originalData = { ...currentUserData };
+                    } else {
+                        showError('User profile not found.');
+                        return;
                     }
-                    
-                    originalData = { ...currentUserData };
                 }
                 
-                // Populate form with safe fallbacks
-                document.getElementById('displayName').value = currentUserData.displayName || '';
-                document.getElementById('email').value = currentUser.email || '';
-                document.getElementById('bio').value = currentUserData.bio || '';
+                // Populate form or read-only view
+                const displayName = currentUserData.displayName || currentUserData.email || 'User';
+                const email = currentUserData.email || 'No email';
+                const bio = currentUserData.bio || '';
+                
+                if (isOwnProfile) {
+                    // Populate editable form
+                    document.getElementById('displayName').value = displayName;
+                    document.getElementById('email').value = currentUser.email || '';
+                    document.getElementById('bio').value = bio;
+                    
+                    // Email verification status
+                    const emailDisplay = document.getElementById('email-display');
+                    emailDisplay.innerHTML = currentUser.email || 'No email';
+                    
+                    if (currentUser.emailVerified) {
+                        emailDisplay.innerHTML += ' <span class="email-verified">✓ Verified</span>';
+                    } else {
+                        emailDisplay.innerHTML += ' <span class="email-unverified">⚠ Not Verified</span>';
+                        if (currentUser.email) {
+                            emailDisplay.innerHTML += ' <a href="#" onclick="window.resendVerification(); return false;" style="font-size: 12px; margin-left: 5px;">Resend</a>';
+                        }
+                    }
+                } else {
+                    // Populate read-only view
+                    document.getElementById('readonly-displayName').textContent = displayName;
+                    document.getElementById('readonly-email').textContent = email;
+                    document.getElementById('readonly-bio').textContent = bio || 'No bio provided';
+                    
+                    // Simple email display for other users
+                    document.getElementById('email-display').textContent = email;
+                }
                 
                 // Update display
-                const displayName = currentUserData.displayName || currentUser.email || 'User';
                 document.getElementById('username-display').textContent = displayName;
-                
-                // Email verification status
-                const emailDisplay = document.getElementById('email-display');
-                emailDisplay.innerHTML = currentUser.email || 'No email';
-                
-                if (currentUser.emailVerified) {
-                    emailDisplay.innerHTML += ' <span class="email-verified">✓ Verified</span>';
-                } else {
-                    emailDisplay.innerHTML += ' <span class="email-unverified">⚠ Not Verified</span>';
-                    if (currentUser.email) {
-                        emailDisplay.innerHTML += ' <a href="#" onclick="window.resendVerification(); return false;" style="font-size: 12px; margin-left: 5px;">Resend</a>';
-                    }
-                }
                 
                 // Update profile icon
                 const firstLetter = displayName.charAt(0).toUpperCase();
@@ -311,52 +421,35 @@
                 // Format dates using utility function
                 document.getElementById('account-created').textContent = formatFirestoreDate(currentUserData.createdAt);
                 
-               /* try {
-                    if (currentUserData.lastLogin) {
-                        // Check if it's a Firestore Timestamp object
-                        if (currentUserData.lastLogin.toDate && typeof currentUserData.lastLogin.toDate === 'function') {
-                            const lastLoginDate = currentUserData.lastLogin.toDate();
-                            document.getElementById('last-login').textContent = formatDate(lastLoginDate);
-                        } else if (currentUserData.lastLogin instanceof Date) {
-                            document.getElementById('last-login').textContent = formatDate(currentUserData.lastLogin);
-                        } else {
-                            document.getElementById('last-login').textContent = 'Just now';
-                        }
-                    } else {
-                        document.getElementById('last-login').textContent = 'Just now';
-                    }
-                } catch (dateError) {
-                    console.error('Error formatting lastLogin date:', dateError);
-                    document.getElementById('last-login').textContent = 'Just now';
-                } */
-                
             } catch (error) {
                 console.error('Error loading profile:', error);
                 showError('Failed to load profile. Please try again.');
                 
-                // Set minimal fallback data to prevent further errors
-                currentUserData = {
-                    displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
-                    email: currentUser.email || '',
-                    bio: ''
-                };
-                originalData = { ...currentUserData };
-                
-                // Update UI with fallback data
-                document.getElementById('displayName').value = currentUserData.displayName;
-                document.getElementById('email').value = currentUserData.email;
-                document.getElementById('username-display').textContent = currentUserData.displayName;
-                document.getElementById('profile-icon').textContent = currentUserData.displayName.charAt(0).toUpperCase();
+                if (isOwnProfile) {
+                    // Set minimal fallback data to prevent further errors
+                    currentUserData = {
+                        displayName: currentUser.displayName || currentUser.email?.split('@')[0] || 'User',
+                        email: currentUser.email || '',
+                        bio: ''
+                    };
+                    originalData = { ...currentUserData };
+                    
+                    // Update UI with fallback data
+                    document.getElementById('displayName').value = currentUserData.displayName;
+                    document.getElementById('email').value = currentUserData.email;
+                    document.getElementById('username-display').textContent = currentUserData.displayName;
+                    document.getElementById('profile-icon').textContent = currentUserData.displayName.charAt(0).toUpperCase();
+                }
             } finally {
                 showLoading(false);
             }
         }
 
         // Load user statistics
-        async function loadUserStats() {
+        async function loadUserStats(userId) {
             try {
                 const locationsRef = collection(db, 'locations');
-                const q = query(locationsRef, where('userId', '==', currentUser.uid));
+                const q = query(locationsRef, where('userId', '==', userId));
                 const querySnapshot = await getDocs(q);
                 
                 document.getElementById('location-count').textContent = querySnapshot.size;
@@ -376,9 +469,11 @@
             }
         };
 
-        // Save profile changes
+        // Save profile changes (only for own profile)
         document.getElementById('profile-form').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            if (!isOwnProfile) return;
             
             const displayName = document.getElementById('displayName').value.trim();
             const bio = document.getElementById('bio').value.trim();
@@ -400,7 +495,7 @@
                 showSuccess('Profile updated successfully!');
                 
                 // Reload profile
-                await loadUserProfile();
+                await loadUserProfile(currentUser.uid);
             } catch (error) {
                 console.error('Error updating profile:', error);
                 showError('Failed to update profile. Please try again.');
@@ -409,8 +504,10 @@
             }
         });
 
-        // Reset form
+        // Reset form (only for own profile)
         document.getElementById('reset-btn').addEventListener('click', function() {
+            if (!isOwnProfile) return;
+            
             if (originalData) {
                 document.getElementById('displayName').value = originalData.displayName || '';
                 document.getElementById('bio').value = originalData.bio || '';
@@ -418,8 +515,10 @@
             }
         });
 
-        // Logout
+        // Logout (only for own profile)
         document.getElementById('logout-btn').addEventListener('click', async function() {
+            if (!isOwnProfile) return;
+            
             if (confirm('Are you sure you want to logout?')) {
                 try {
                     await signOut(auth);
@@ -430,11 +529,6 @@
                 }
             }
         });
-
-        // Note: showLoading, showSuccess, showError, and formatFirestoreDate are now imported from utils.js
     </script>
 </body>
 </html>
-
-
-
