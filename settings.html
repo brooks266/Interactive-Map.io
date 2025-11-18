@@ -47,18 +47,129 @@
             border-bottom: 2px solid #f0f0f0;
         }
         
+        .profile-picture-container {
+            position: relative;
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 15px;
+        }
+        
         .profile-icon {
-            width: 80px;
-            height: 80px;
+            width: 120px;
+            height: 120px;
             background: #007cba;
             color: white;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 36px;
+            font-size: 48px;
             font-weight: bold;
-            margin: 0 auto 15px;
+            overflow: hidden;
+            border: 4px solid #f0f0f0;
+        }
+        
+        .profile-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .change-picture-btn {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background: #007cba;
+            color: white;
+            border: 2px solid white;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            transition: background 0.3s;
+        }
+        
+        .change-picture-btn:hover {
+            background: #005a87;
+        }
+        
+        .picture-upload-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .picture-upload-section.active {
+            display: block;
+        }
+        
+        .picture-preview {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin: 10px auto;
+            display: none;
+            border: 3px solid #007cba;
+        }
+        
+        .picture-preview.active {
+            display: block;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+        
+        .file-input-label {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #007cba;
+            color: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.3s;
+        }
+        
+        .file-input-label:hover {
+            background: #005a87;
+        }
+        
+        .upload-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .upload-actions button {
+            flex: 1;
+            padding: 8px 15px;
+            font-size: 14px;
+        }
+        
+        .email-verification-warning {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            color: #856404;
+            padding: 12px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+            font-size: 14px;
         }
         
         .username-display {
@@ -199,9 +310,36 @@
             <div id="loading" class="loading">Loading...</div>
         
             <div class="profile-header">
-                <div class="profile-icon" id="profile-icon">?</div>
+                <div class="profile-picture-container">
+                    <div class="profile-icon" id="profile-icon">?</div>
+                    <button class="change-picture-btn" id="change-picture-btn" style="display: none;" title="Change profile picture">📷</button>
+                </div>
                 <h2 class="username-display" id="username-display">Loading...</h2>
                 <p class="email-display" id="email-display"></p>
+            </div>
+            
+            <!-- Profile Picture Upload Section (shown only for own profile) -->
+            <div class="picture-upload-section" id="picture-upload-section">
+                <div id="email-verification-warning" class="email-verification-warning" style="display: none;">
+                    ⚠️ You must verify your email before uploading a profile picture.
+                    <a href="#" onclick="window.resendVerification(); return false;" style="text-decoration: underline;">Resend verification email</a>
+                </div>
+                
+                <h3 style="margin-top: 0; color: #333; font-size: 16px;">Change Profile Picture</h3>
+                <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Upload an image (max 2MB). Supported formats: JPG, PNG, GIF, WebP</p>
+                
+                <img id="picture-preview" class="picture-preview" alt="Preview" />
+                
+                <div class="file-input-wrapper">
+                    <input type="file" id="profile-picture-input" accept="image/*" />
+                    <label for="profile-picture-input" class="file-input-label">Choose Image</label>
+                </div>
+                
+                <div class="upload-actions">
+                    <button type="button" class="btn btn-primary" id="upload-picture-btn" disabled>Upload Picture</button>
+                    <button type="button" class="btn btn-secondary" id="cancel-upload-btn">Cancel</button>
+                    <button type="button" class="btn btn-danger" id="remove-picture-btn" style="display: none;">Remove Picture</button>
+                </div>
             </div>
             
             <!-- Editable form (shown only for own profile) -->
@@ -260,7 +398,8 @@
     </div>
 
     <script type="module">
-        import { auth, db, onAuthStateChanged, signOut, doc, getDoc, 
+        import { auth, db, storage, ref, uploadBytes, getDownloadURL, deleteObject,
+                 onAuthStateChanged, signOut, doc, getDoc, 
                  setDoc, collection, query, where, getDocs, serverTimestamp,
                  sendEmailVerification } from './js/firebase-config.js';
         
@@ -271,7 +410,9 @@
         let originalData = null;
         let viewingUserId = null;
         let isOwnProfile = true;
+        let selectedFile = null;
         const MESSAGE_TIMEOUT = 5000;
+        const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB in bytes
 
         // Session Check
         onAuthStateChanged(auth, async (user) => {
@@ -311,6 +452,7 @@
             const logoutSection = document.getElementById('logout-section');
             const statsTitle = document.getElementById('stats-title');
             const backBtn = document.getElementById('back-btn');
+            const changePictureBtn = document.getElementById('change-picture-btn');
             
             if (isOwnProfile) {
                 // Show editable form
@@ -319,6 +461,7 @@
                 logoutSection.style.display = 'block';
                 statsTitle.textContent = 'Your Statistics';
                 backBtn.textContent = '← Back to Map';
+                changePictureBtn.style.display = 'flex';
             } else {
                 // Show read-only view
                 profileForm.style.display = 'none';
@@ -326,11 +469,32 @@
                 logoutSection.style.display = 'none';
                 statsTitle.textContent = 'User Statistics';
                 backBtn.textContent = '← Back';
+                changePictureBtn.style.display = 'none';
                 
                 // Check if coming from location page
                 const referrer = document.referrer;
                 if (referrer && referrer.includes('location.html')) {
                     backBtn.href = referrer;
+                }
+            }
+        }
+
+        // Load and display profile picture
+        function displayProfilePicture(photoURL) {
+            const profileIcon = document.getElementById('profile-icon');
+            const removePictureBtn = document.getElementById('remove-picture-btn');
+            
+            if (photoURL) {
+                profileIcon.innerHTML = `<img src="${photoURL}" alt="Profile Picture" />`;
+                if (isOwnProfile) {
+                    removePictureBtn.style.display = 'block';
+                }
+            } else {
+                const displayName = currentUserData?.displayName || 'User';
+                const firstLetter = displayName.charAt(0).toUpperCase();
+                profileIcon.textContent = firstLetter;
+                if (isOwnProfile) {
+                    removePictureBtn.style.display = 'none';
                 }
             }
         }
@@ -405,9 +569,8 @@
                 // Update display
                 document.getElementById('username-display').textContent = displayName;
                 
-                // Update profile icon
-                const firstLetter = displayName.charAt(0).toUpperCase();
-                document.getElementById('profile-icon').textContent = firstLetter;
+                // Display profile picture or initial
+                displayProfilePicture(currentUserData.photoURL);
                 
                 // Format dates using utility function
                 document.getElementById('account-created').textContent = formatFirestoreDate(currentUserData.createdAt);
@@ -429,7 +592,7 @@
                     document.getElementById('displayName').value = currentUserData.displayName;
                     document.getElementById('email').value = currentUserData.email;
                     document.getElementById('username-display').textContent = currentUserData.displayName;
-                    document.getElementById('profile-icon').textContent = currentUserData.displayName.charAt(0).toUpperCase();
+                    displayProfilePicture(null);
                 }
             } finally {
                 showLoading(false);
@@ -448,6 +611,163 @@
                 console.error('Error loading stats:', error);
             }
         }
+
+        // Profile Picture Upload Handlers
+        document.getElementById('change-picture-btn').addEventListener('click', function() {
+            const uploadSection = document.getElementById('picture-upload-section');
+            const verificationWarning = document.getElementById('email-verification-warning');
+            
+            // Check email verification
+            if (!currentUser.emailVerified) {
+                verificationWarning.style.display = 'block';
+            } else {
+                verificationWarning.style.display = 'none';
+            }
+            
+            uploadSection.classList.add('active');
+        });
+
+        document.getElementById('profile-picture-input').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showError('Please select an image file.');
+                this.value = '';
+                return;
+            }
+            
+            // Validate file size
+            if (file.size > MAX_FILE_SIZE) {
+                showError('Image size must be less than 2MB.');
+                this.value = '';
+                return;
+            }
+            
+            // Preview image
+            selectedFile = file;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById('picture-preview');
+                preview.src = e.target.result;
+                preview.classList.add('active');
+            };
+            reader.readAsDataURL(file);
+            
+            // Enable upload button
+            document.getElementById('upload-picture-btn').disabled = false;
+        });
+
+        document.getElementById('upload-picture-btn').addEventListener('click', async function() {
+            if (!selectedFile) {
+                showError('Please select an image first.');
+                return;
+            }
+            
+            if (!currentUser.emailVerified) {
+                showError('Please verify your email before uploading a profile picture.');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                // Create a unique filename
+                const timestamp = Date.now();
+                const fileExtension = selectedFile.name.split('.').pop();
+                const fileName = `profile_${timestamp}.${fileExtension}`;
+                
+                // Upload to Firebase Storage
+                const storageRef = ref(storage, `profilePictures/${currentUser.uid}/${fileName}`);
+                await uploadBytes(storageRef, selectedFile);
+                
+                // Get download URL
+                const photoURL = await getDownloadURL(storageRef);
+                
+                // Update Firestore user document
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    photoURL: photoURL,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+                
+                // Delete old profile picture if exists
+                if (currentUserData.photoURL && currentUserData.photoURL !== photoURL) {
+                    try {
+                        const oldPhotoRef = ref(storage, currentUserData.photoURL);
+                        await deleteObject(oldPhotoRef);
+                    } catch (deleteError) {
+                        console.log('Could not delete old photo:', deleteError);
+                    }
+                }
+                
+                showSuccess('Profile picture updated successfully!');
+                
+                // Reset upload section
+                document.getElementById('picture-upload-section').classList.remove('active');
+                document.getElementById('picture-preview').classList.remove('active');
+                document.getElementById('profile-picture-input').value = '';
+                document.getElementById('upload-picture-btn').disabled = true;
+                selectedFile = null;
+                
+                // Reload profile
+                await loadUserProfile(currentUser.uid);
+                
+            } catch (error) {
+                console.error('Error uploading profile picture:', error);
+                if (error.code === 'storage/unauthorized') {
+                    showError('Upload failed: Please verify your email first.');
+                } else {
+                    showError('Failed to upload profile picture. Please try again.');
+                }
+            } finally {
+                showLoading(false);
+            }
+        });
+
+        document.getElementById('cancel-upload-btn').addEventListener('click', function() {
+            document.getElementById('picture-upload-section').classList.remove('active');
+            document.getElementById('picture-preview').classList.remove('active');
+            document.getElementById('profile-picture-input').value = '';
+            document.getElementById('upload-picture-btn').disabled = true;
+            selectedFile = null;
+        });
+
+        document.getElementById('remove-picture-btn').addEventListener('click', async function() {
+            if (!confirm('Are you sure you want to remove your profile picture?')) {
+                return;
+            }
+            
+            if (!currentUserData.photoURL) {
+                showError('No profile picture to remove.');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                // Delete from Storage
+                const photoRef = ref(storage, currentUserData.photoURL);
+                await deleteObject(photoRef);
+                
+                // Update Firestore
+                await setDoc(doc(db, 'users', currentUser.uid), {
+                    photoURL: null,
+                    updatedAt: serverTimestamp()
+                }, { merge: true });
+                
+                showSuccess('Profile picture removed successfully!');
+                
+                // Reload profile
+                await loadUserProfile(currentUser.uid);
+                
+            } catch (error) {
+                console.error('Error removing profile picture:', error);
+                showError('Failed to remove profile picture. Please try again.');
+            } finally {
+                showLoading(false);
+            }
+        });
 
         // Resend verification email
         window.resendVerification = async function() {
@@ -523,6 +843,3 @@
     </script>
 </body>
 </html>
-
-
-
