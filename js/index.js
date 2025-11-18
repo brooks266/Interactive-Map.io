@@ -1,330 +1,729 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive Map App</title>
-    <link rel="manifest" href="./manifest.json">
-    <meta name="theme-color" content="#007cba">
-    <link rel="apple-touch-icon" href="./icons/icon-192.png">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="msapplication-TileImage" content="./icons/icon-192.png">
+import { auth, db, storage, ref, uploadBytes, getDownloadURL, deleteObject,
+         onAuthStateChanged, signOut, collection, addDoc,
+         getDocs, doc, getDoc, updateDoc, deleteDoc, query, where,
+         orderBy, serverTimestamp } from './firebase-config.js';
+import { showLoading, showError, showSuccess, handleError } from './utils.js';
 
-    <!-- Preconnect to external domains for faster loading -->
-    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-    <link rel="preconnect" href="https://tile.openstreetmap.org">
-    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
+// Wait for DOM and deferred scripts to load
+document.addEventListener('DOMContentLoaded', function() {
+    let map;
+    let markers;
+    let allMarkers = [];
+    let searchTimeout;
+    let creationMode = false;
+    let tempMarker = null;
+    let clickLat, clickLon;
+    let currentUser = null;
+    let currentUserData = null;
+    let editingLocationId = null;
+    let selectedNewImage = null;
+    let selectedEditImage = null;
+    let currentLocationImageUrl = null;
 
-    <!-- Preload critical resources -->
-    <link rel="preload" href="./css/common.css" as="style">
-    <link rel="preload" href="./css/leaflet.css" as="style">
-    <link rel="preload" href="./js/leaflet.js" as="script">
+    // Session Check: Redirect to login if not authenticated
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            window.location.href = './login.html';
+            return;
+        }
 
-    <link rel="stylesheet" href="./css/common.css">
-    <link rel="stylesheet" href="./css/leaflet.css">
-    <link rel="stylesheet" href="./css/MarkerCluster.css">
-    <link rel="stylesheet" href="./css/MarkerCluster.Default.css">
+        currentUser = user;
 
-    <script src="./js/leaflet.js" defer></script>
-    <script src="./js/leaflet.markercluster.js" defer></script>
-    
-    <style>
-        /* Page-specific styles only */
-        html, body {
-            margin: 0;
-            padding: 0;
-            height: 100vh;
-            overflow: hidden;
+        // Load user profile from Firestore
+        try {
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            if (userDoc.exists()) {
+                currentUserData = userDoc.data();
+            }
+        } catch (error) {
+            console.error('Error loading user profile:', error);
         }
-        
-        #map {
-            height: 100vh;
-            width: 100vw;
-            border: none;
-            position: relative;
-            z-index: 1;
+
+        // Initialize map after authentication
+        initializeMap();
+    });
+
+    function initializeMap() {
+        // Initialize the map with default view (will be updated if geolocation succeeds)
+        map = L.map('map').setView([39.8283, -98.5795], 4);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        markers = L.markerClusterGroup({
+            maxClusterRadius: 50,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: true,
+            zoomToBoundsOnClick: true
+        });
+
+         // Add marker cluster group to map once during initialization
+         map.addLayer(markers);
+
+        // Try to get user's location and center map on it
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(
+                // Success callback
+                function(position) {
+                    const userLat = position.coords.latitude;
+                    const userLon = position.coords.longitude;
+
+                    // Center map on user's location with closer zoom
+                    map.setView([userLat, userLon], 13);
+
+                    console.log(`Map centered on user location: ${userLat.toFixed(6)}, ${userLon.toFixed(6)}`);
+                },
+                // Error callback
+                function(error) {
+                    console.log('Geolocation error or denied:', error.message);
+                    console.log('Using default map center (US)');
+                },
+                // Options
+                {
+                    enableHighAccuracy: false,
+                    timeout: 5000,
+                    maximumAge: 0
+                }
+            );
+        } else {
+            console.log('Geolocation not supported by browser. Using default map center.');
         }
+
+        // Load locations from Firestore
+        loadLocationsFromFirestore();
+
+        // Event listeners
+        document.getElementById('add-btn').addEventListener('click', toggleCreationMode);
+        document.getElementById('search').addEventListener('input', handleSearch);
+        document.getElementById('settings-btn').addEventListener('click', () => {
+            window.location.href = './settings.html';
+        });
+        document.getElementById('submit-location-btn').addEventListener('click', submitNewLocation);
+        document.getElementById('cancel-location-btn').addEventListener('click', cancelNewLocation);
+        document.getElementById('update-location-btn').addEventListener('click', updateLocation);
+        document.getElementById('delete-location-btn').addEventListener('click', deleteLocation);
+        document.getElementById('cancel-edit-btn').addEventListener('click', cancelEdit);
         
-        #search-container {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 100;
-            background: rgba(255, 255, 255, 0.95);
-            padding: 10px 15px;
-            border-radius: 25px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            min-width: 300px;
+        // Image upload event listeners
+        document.getElementById('new-image').addEventListener('change', handleNewImageSelect);
+        document.getElementById('edit-image').addEventListener('change', handleEditImageSelect);
+        document.getElementById('remove-image-btn').addEventListener('click', handleRemoveImage);
+
+        // PWA: Register Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js')
+                .then(registration => console.log('SW registered: ', registration))
+                .catch(error => console.log('SW registration failed: ', error));
         }
-        
-        #search {
-            flex: 1;
-            padding: 10px;
-            font-size: 16px;
-            border: 1px solid #ccc;
-            border-radius: 20px;
-            box-sizing: border-box;
-            min-width: 200px;
-        }
-        
-        #search:focus {
-            outline: none;
-            border-color: #007cba;
-            box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
-        }
-        
-        #add-btn {
-            width: 40px;
-            height: 40px;
-            background: #ccc;
-            color: #333;
-            border: none;
-            border-radius: 50%;
-            font-size: 20px;
-            font-weight: bold;
-            cursor: pointer;
-            flex-shrink: 0;
-        }
-        
-        #add-btn.active {
-            background: #28a745;
-            color: white;
-        }
-        
-        #settings-btn {
-            padding: 10px 15px;
-            background: #6c757d;
-            color: white;
-            border: none;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        
-        #settings-btn:hover {
-            background: #5a6268;
-        }
-        
-        @media (max-width: 480px) {
-            #search-container {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                min-width: 260px;
-                padding: 15px;
-                bottom: 10px;
+
+        // PWA: Offline Detection
+        window.addEventListener('online', () => {
+            document.getElementById('offline-message').style.display = 'none';
+        });
+        window.addEventListener('offline', () => {
+            document.getElementById('offline-message').style.display = 'block';
+            if (creationMode) {
+                showError('Offline: Cannot add new locations. Reload when online.');
+            }
+        });
+    }
+
+    // Load locations from Firestore with lazy loading
+    async function loadLocationsFromFirestore() {
+        showLoading(true);
+        try {
+                  // Clear existing markers from the cluster group
+                  markers.clearLayers();
+                 
+            const locationsRef = collection(db, 'locations');
+            const q = query(locationsRef, orderBy('createdAt', 'desc'));
+            const querySnapshot = await getDocs(q);
+
+            allMarkers = [];
+            let validMarkers = 0;
+            const batchSize = 50; // Load markers in batches for better performance
+            let currentBatch = [];
+
+            for (const docSnap of querySnapshot.docs) {
+                const data = docSnap.data();
+                const locationId = docSnap.id;
+
+                const lat = parseFloat(data.latitude);
+                const lon = parseFloat(data.longitude);
+                const title = data.title || 'Untitled Location';
+                const notes = data.notes || '';
+                const address = data.address || '';
+                const userId = data.userId || '';
+
+                // Get username from user profile (batch these requests if possible)
+                let username = 'Unknown User';
+                if (userId) {
+                    try {
+                        const userDoc = await getDoc(doc(db, 'users', userId));
+                        if (userDoc.exists()) {
+                            username = userDoc.data().displayName || userDoc.data().email || 'Unknown User';
+                        }
+                    } catch (error) {
+                        console.error('Error loading user:', error);
+                    }
+                }
+
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    const popupContent = createPopupContent(locationId, title, lat, lon, notes, address, username, userId);
+                    const marker = L.marker([lat, lon]).bindPopup(popupContent);
+
+                    const markerObj = {
+                        locationId,
+                        title,
+                        notes,
+                        address,
+                        user: username,
+                        userId,
+                        lat,
+                        lon,
+                        marker
+                    };
+
+                    allMarkers.push(markerObj);
+                    currentBatch.push(markerObj);
+                    validMarkers++;
+
+                    // Add markers in batches to avoid blocking the UI
+                    if (currentBatch.length >= batchSize) {
+                        currentBatch.forEach(obj => markers.addLayer(obj.marker));
+                        currentBatch = [];
+                        // Allow UI to update between batches
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
+                }
             }
 
-            #stacker {
-                display: flex;
-                flex-direction: row;
-                gap: 10px;
+            // Add remaining markers
+            currentBatch.forEach(obj => markers.addLayer(obj.marker));
+
+            console.log(`${validMarkers} markers loaded from Firestore.`);
+        } catch (error) {
+            console.error('Error loading locations:', error);
+            showError('Failed to load locations. Please refresh the page.');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // Create popup content
+    function createPopupContent(locationId, title, lat, lon, notes, address, user, userId) {
+        let popupContent = `<b>${title}</b><br>`;
+        if (address) {
+            popupContent += `<br><strong>Address:</strong><br>${address}`;
+        }
+        if (user) {
+            popupContent += `<br><strong>User:</strong> ${user}`;
+        }
+        if (notes) {
+            popupContent += `<br><br><strong>Notes:</strong><br>${notes}`;
+        }
+
+        // Add View Details link
+        popupContent += `<br><br><a href="./location.html?id=${locationId}" style="background: #007cba; color: white; padding: 5px 10px; text-decoration: none; border-radius: 3px; display: inline-block;">View Details</a>`;
+
+        // Add Edit/Delete buttons if user owns this location
+        if (currentUser && userId === currentUser.uid) {
+            popupContent += `
+                <div class="popup-actions">
+                    <button class="popup-edit" onclick="window.editLocation('${locationId}')">Edit</button>
+                    <button class="popup-delete" onclick="window.confirmDeleteLocation('${locationId}')">Delete</button>
+                </div>
+            `;
+        }
+
+        return popupContent;
+    }
+
+    // Edit location
+    window.editLocation = async function(locationId) {
+        try {
+            const locationDoc = await getDoc(doc(db, 'locations', locationId));
+            if (locationDoc.exists()) {
+                const data = locationDoc.data();
+                editingLocationId = locationId;
+                currentLocationImageUrl = data.imageUrl || null;
+
+                document.getElementById('edit-title').value = data.title || '';
+                document.getElementById('edit-notes').value = data.notes || '';
+                document.getElementById('edit-address').value = data.address || '';
+
+                // Display current image if exists
+                const currentImageDiv = document.getElementById('edit-current-image');
+                const removeImageBtn = document.getElementById('remove-image-btn');
+                
+                if (currentLocationImageUrl) {
+                    currentImageDiv.innerHTML = `<img src="${currentLocationImageUrl}" alt="${data.title}">`;
+                    removeImageBtn.style.display = 'inline-block';
+                } else {
+                    currentImageDiv.innerHTML = '<div class="no-image">No image</div>';
+                    removeImageBtn.style.display = 'none';
+                }
+
+                // Clear any previous selections
+                document.getElementById('edit-image').value = '';
+                document.getElementById('edit-image-preview').innerHTML = '';
+                selectedEditImage = null;
+
+                document.getElementById('edit-modal').style.display = 'block';
             }
-            
-            #search {
-                min-width: auto;
+        } catch (error) {
+            console.error('Error loading location:', error);
+            showError('Failed to load location details.');
+        }
+    };
+
+    // Update location
+    async function updateLocation() {
+        if (!editingLocationId) return;
+
+        const title = document.getElementById('edit-title').value.trim();
+        const notes = document.getElementById('edit-notes').value.trim();
+        const address = document.getElementById('edit-address').value.trim();
+
+        if (!title) {
+            showError('Title is required!');
+            return;
+        }
+
+        showLoading(true);
+
+        try {
+            let imageUrl = currentLocationImageUrl;
+
+            // Handle new image upload
+            if (selectedEditImage) {
+                // Delete old image if exists
+                if (currentLocationImageUrl) {
+                    await deleteImageFromStorage(currentLocationImageUrl);
+                }
+
+                // Upload new image
+                imageUrl = await uploadImageToStorage(selectedEditImage, editingLocationId);
             }
-            
-            #add-btn, #settings-btn {
-                border-radius: 20px;
-                text-align: center;
+
+            // Update Firestore
+            const updateData = {
+                title,
+                notes,
+                address,
+                updatedAt: serverTimestamp()
+            };
+
+            if (imageUrl) {
+                updateData.imageUrl = imageUrl;
             }
-        }
-        
-        /* Modal-specific overrides */
-        .modal h3 { 
-            margin-top: 0; 
-        }
-        
-        .modal button { 
-            margin: 5px; 
-        }
-        
-        #offline-message { 
-            display: none; 
-            position: fixed; 
-            top: 20px; 
-            right: 20px; 
-            background: #ff9800; 
-            color: white; 
-            padding: 10px; 
-            border-radius: 4px; 
-            z-index: 1001; 
-            font-size: 14px; 
-        }
 
-        .popup-actions {
-            margin-top: 10px;
-            display: flex;
-            gap: 5px;
-        }
+            await updateDoc(doc(db, 'locations', editingLocationId), updateData);
 
-        .popup-actions button {
-            padding: 5px 10px;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
-        }
+            document.getElementById('edit-modal').style.display = 'none';
+            editingLocationId = null;
+            selectedEditImage = null;
+            currentLocationImageUrl = null;
 
-        .popup-edit {
-            background: #007cba;
-            color: white;
-        }
+            // Reload locations
+            await loadLocationsFromFirestore();
 
-        .popup-delete {
-            background: #dc3545;
-            color: white;
+            showSuccess('Location updated successfully!');
+        } catch (error) {
+            console.error('Error updating location:', error);
+            showError('Failed to update location. Please try again.');
+        } finally {
+            showLoading(false);
         }
+    }
 
-        /* Image upload styles */
-        .image-upload-section {
-            margin: 15px 0;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 4px;
+    // Confirm delete location
+    window.confirmDeleteLocation = function(locationId) {
+        if (confirm('Are you sure you want to delete this location? This cannot be undone.')) {
+            deleteLocationById(locationId);
         }
+    };
 
-        .image-upload-section label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #333;
+    // Delete location
+    async function deleteLocation() {
+        if (!editingLocationId) return;
+
+        if (confirm('Are you sure you want to delete this location? This cannot be undone.')) {
+            await deleteLocationById(editingLocationId);
+            document.getElementById('edit-modal').style.display = 'none';
+            editingLocationId = null;
         }
+    }
 
-        .image-upload-section input[type="file"] {
-            display: block;
-            width: 100%;
-            padding: 8px;
-            margin-top: 5px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            background: white;
+    async function deleteLocationById(locationId) {
+        showLoading(true);
+
+        try {
+            // Get location data to check for image
+            const locationDoc = await getDoc(doc(db, 'locations', locationId));
+            if (locationDoc.exists()) {
+                const data = locationDoc.data();
+                // Delete image from storage if exists
+                if (data.imageUrl) {
+                    await deleteImageFromStorage(data.imageUrl);
+                }
+            }
+
+            await deleteDoc(doc(db, 'locations', locationId));
+
+            // Reload locations
+            await loadLocationsFromFirestore();
+
+            showSuccess('Location deleted successfully!');
+        } catch (error) {
+            console.error('Error deleting location:', error);
+            showError('Failed to delete location. Please try again.');
+        } finally {
+            showLoading(false);
         }
+    }
 
-        .image-preview {
-            margin-top: 10px;
-            text-align: center;
-        }
+    function cancelEdit() {
+        document.getElementById('edit-modal').style.display = 'none';
+        editingLocationId = null;
+        selectedEditImage = null;
+        currentLocationImageUrl = null;
+        document.getElementById('edit-image-preview').innerHTML = '';
+        document.getElementById('edit-current-image').innerHTML = '';
+        document.getElementById('remove-image-btn').style.display = 'none';
+    }
 
-        .image-preview img {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
+    // ===== IMAGE HANDLING FUNCTIONS =====
 
-        .image-preview .remove-preview {
-            display: inline-block;
-            margin-top: 8px;
-            padding: 5px 10px;
-            background: #dc3545;
-            color: white;
-            border: none;
-            border-radius: 3px;
-            cursor: pointer;
-            font-size: 12px;
+    // Validate image file
+    function validateImageFile(file) {
+        const maxSize = 5 * 1024 * 1024; // 5MB
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+
+        if (!allowedTypes.includes(file.type)) {
+            showError('Invalid file type. Please upload JPG, PNG, GIF, or WebP images.');
+            return false;
         }
 
-        .current-image {
-            margin: 10px 0;
-            text-align: center;
+        if (file.size > maxSize) {
+            showError('File size exceeds 5MB limit. Please choose a smaller image.');
+            return false;
         }
 
-        .current-image img {
-            max-width: 100%;
-            max-height: 150px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        return true;
+    }
+
+    // Handle new image selection (creation modal)
+    function handleNewImageSelect(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            selectedNewImage = null;
+            document.getElementById('new-image-preview').innerHTML = '';
+            return;
         }
 
-        .current-image .no-image {
-            color: #999;
-            font-style: italic;
-            padding: 10px;
+        if (!validateImageFile(file)) {
+            event.target.value = '';
+            selectedNewImage = null;
+            return;
         }
 
-        .popup-image {
-            width: 100%;
-            max-width: 200px;
-            height: auto;
-            border-radius: 4px;
-            margin: 10px 0;
+        selectedNewImage = file;
+
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('new-image-preview').innerHTML = `
+                <img src="${e.target.result}" alt="Preview">
+                <button type="button" class="remove-preview" onclick="document.getElementById('new-image').value=''; document.getElementById('new-image-preview').innerHTML=''; selectedNewImage=null;">Remove</button>
+            `;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Handle edit image selection (edit modal)
+    function handleEditImageSelect(event) {
+        const file = event.target.files[0];
+        if (!file) {
+            selectedEditImage = null;
+            document.getElementById('edit-image-preview').innerHTML = '';
+            return;
         }
-    </style>
-</head>
-<body>
-    <div id="search-container">
-        <input type="text" id="search" placeholder="Search by title, notes, address, or user..." />
-        <div id="stacker">
-            <button id="add-btn" title="Add New Location">+</button>
-            <button id="settings-btn">Settings</button>
-        </div>
-    </div>
-    
-    <div id="map"></div>
 
-    <div id="offline-message">Offline Mode: Some features limited.</div>
+        if (!validateImageFile(file)) {
+            event.target.value = '';
+            selectedEditImage = null;
+            return;
+        }
 
-    <div id="loading-overlay" class="loading-overlay">
-        <div class="loading-spinner"></div>
-    </div>
+        selectedEditImage = file;
 
-    <!-- Message element for error/success notifications -->
-    <div id="message" class="message"></div>
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            document.getElementById('edit-image-preview').innerHTML = `
+                <img src="${e.target.result}" alt="Preview">
+                <button type="button" class="remove-preview" onclick="document.getElementById('edit-image').value=''; document.getElementById('edit-image-preview').innerHTML=''; selectedEditImage=null;">Remove</button>
+            `;
+        };
+        reader.readAsDataURL(file);
+    }
 
-    <!-- Creation Modal -->
-    <div id="creation-modal" class="modal">
-        <div class="modal-content">
-            <h3>Add New Location</h3>
-            <p>Clicked at: <span id="click-coords"></span></p>
-            <input type="text" id="new-title" placeholder="Title (required)" />
-            <input type="text" id="new-user" placeholder="User (auto-filled)" readonly />
-            <textarea id="new-notes" placeholder="Notes (optional)"></textarea>
-            <input type="text" id="new-address" placeholder="Address (optional, for search/display)" />
+    // Handle remove image button
+    async function handleRemoveImage() {
+        if (!currentLocationImageUrl || !editingLocationId) return;
+
+        if (!confirm('Are you sure you want to remove this image?')) {
+            return;
+        }
+
+        showLoading(true);
+
+        try {
+            // Delete image from Storage
+            await deleteImageFromStorage(currentLocationImageUrl);
+
+            // Update Firestore to remove imageUrl
+            await updateDoc(doc(db, 'locations', editingLocationId), {
+                imageUrl: null,
+                updatedAt: serverTimestamp()
+            });
+
+            // Update UI
+            currentLocationImageUrl = null;
+            document.getElementById('edit-current-image').innerHTML = '<div class="no-image">No image</div>';
+            document.getElementById('remove-image-btn').style.display = 'none';
+
+            showSuccess('Image removed successfully!');
+        } catch (error) {
+            console.error('Error removing image:', error);
+            showError('Failed to remove image. Please try again.');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // Upload image to Firebase Storage
+    async function uploadImageToStorage(file, locationId) {
+        try {
+            const timestamp = Date.now();
+            const fileExtension = file.name.split('.').pop();
+            const fileName = `${locationId}_${timestamp}.${fileExtension}`;
+            const storagePath = `locations/${currentUser.uid}/${fileName}`;
             
-            <div class="image-upload-section">
-                <label for="new-image">Location Image (optional)</label>
-                <input type="file" id="new-image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" />
-                <small style="color: #666; display: block; margin-top: 5px;">Max size: 5MB. Formats: JPG, PNG, GIF, WebP</small>
-                <div id="new-image-preview" class="image-preview"></div>
-            </div>
+            const storageRef = ref(storage, storagePath);
             
-            <button class="btn-primary" id="submit-location-btn">Add Location</button>
-            <button class="btn-secondary" id="cancel-location-btn">Cancel</button>
-        </div>
-    </div>
+            // Upload file
+            await uploadBytes(storageRef, file);
+            
+            // Get download URL
+            const downloadURL = await getDownloadURL(storageRef);
+            
+            return downloadURL;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            throw error;
+        }
+    }
 
-    <!-- Edit Modal -->
-    <div id="edit-modal" class="modal">
-        <div class="modal-content">
-            <h3>Edit Location</h3>
-            <input type="text" id="edit-title" placeholder="Title (required)" />
-            <textarea id="edit-notes" placeholder="Notes (optional)"></textarea>
-            <input type="text" id="edit-address" placeholder="Address (optional)" />
+    // Delete image from Firebase Storage
+    async function deleteImageFromStorage(imageUrl) {
+        try {
+            // Extract storage path from URL
+            const urlParts = imageUrl.split('/o/')[1];
+            if (!urlParts) return;
             
-            <div class="image-upload-section">
-                <label>Location Image</label>
-                <div id="edit-current-image" class="current-image"></div>
-                <input type="file" id="edit-image" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" />
-                <small style="color: #666; display: block; margin-top: 5px;">Upload new image to replace current one. Max size: 5MB</small>
-                <div id="edit-image-preview" class="image-preview"></div>
-                <button type="button" class="btn-secondary" id="remove-image-btn" style="display: none; margin-top: 10px;">Remove Image</button>
-            </div>
+            const pathPart = urlParts.split('?')[0];
+            const storagePath = decodeURIComponent(pathPart);
             
-            <button class="btn-primary" id="update-location-btn">Update Location</button>
-            <button class="btn-danger" id="delete-location-btn">Delete Location</button>
-            <button class="btn-secondary" id="cancel-edit-btn">Cancel</button>
-        </div>
-    </div>
+            const storageRef = ref(storage, storagePath);
+            await deleteObject(storageRef);
+            
+            console.log('Image deleted from storage:', storagePath);
+        } catch (error) {
+            // Don't throw error if image doesn't exist
+            console.error('Error deleting image from storage:', error);
+        }
+    }
 
-    <script type="module" src="./js/index.js"></script>
-</body>
-</html>
+    // Filter markers
+    function filterMarkers(searchTerm) {
+        const term = searchTerm.trim().toLowerCase();
+        markers.clearLayers();
+        let visibleCount = 0;
+
+        if (term === '') {
+            allMarkers.forEach(markerObj => {
+                markers.addLayer(markerObj.marker);
+                visibleCount++;
+            });
+        } else {
+            allMarkers.forEach(markerObj => {
+                const titleMatch = markerObj.title.toLowerCase().includes(term);
+                const notesMatch = markerObj.notes.toLowerCase().includes(term);
+                const addressMatch = (markerObj.address || '').toLowerCase().includes(term);
+                const userMatch = (markerObj.user || '').toLowerCase().includes(term);
+
+                if (titleMatch || notesMatch || addressMatch || userMatch) {
+                    markers.addLayer(markerObj.marker);
+                    visibleCount++;
+                }
+            });
+        }
+
+        console.log(`Showing ${visibleCount} markers (search: "${searchTerm}")`);
+    }
+
+    // Debounced search handler
+    function handleSearch() {
+        if (searchTimeout) clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            const searchTerm = document.getElementById('search').value;
+            filterMarkers(searchTerm);
+        }, 300);
+    }
+
+    // Toggle creation mode
+    function toggleCreationMode() {
+        creationMode = !creationMode;
+        const addBtn = document.getElementById('add-btn');
+        addBtn.classList.toggle('active', creationMode);
+        const searchInput = document.getElementById('search');
+        searchInput.disabled = creationMode;
+
+        if (creationMode) {
+            map.on('click', handleMapClick);
+            console.log('Creation mode: ON - Click map to add pin');
+        } else {
+            map.off('click', handleMapClick);
+            if (tempMarker) {
+                map.removeLayer(tempMarker);
+                tempMarker = null;
+            }
+            searchInput.disabled = false;
+            const currentSearch = searchInput.value;
+            if (currentSearch) filterMarkers(currentSearch);
+            console.log('Creation mode: OFF');
+        }
+    }
+
+    // Handle map click in creation mode
+    function handleMapClick(e) {
+        const lat = e.latlng.lat;
+        const lon = e.latlng.lng;
+        clickLat = lat;
+        clickLon = lon;
+
+        if (tempMarker) {
+            map.removeLayer(tempMarker);
+        }
+
+        tempMarker = L.marker([lat, lon], {
+            icon: L.divIcon({
+                className: 'temp-marker',
+                html: '<div style="background-color: red; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>',
+                iconSize: [20, 20],
+                iconAnchor: [10, 10]
+            })
+        }).addTo(map);
+
+        document.getElementById('click-coords').textContent = `${lat.toFixed(6)}, ${lon.toFixed(6)}`;
+        document.getElementById('creation-modal').style.display = 'block';
+        document.getElementById('new-title').focus();
+
+        // Pre-fill user field
+        const userInput = document.getElementById('new-user');
+        if (userInput && currentUserData) {
+            userInput.value = currentUserData.displayName || currentUser.email;
+        }
+    }
+
+    // Submit new location
+    async function submitNewLocation() {
+        const title = document.getElementById('new-title').value.trim();
+        const notes = document.getElementById('new-notes').value.trim();
+        const address = document.getElementById('new-address').value.trim();
+
+        if (!title) {
+            showError('Title is required!');
+            return;
+        }
+
+        showLoading(true);
+
+        try {
+            // Create location document first
+            const locationData = {
+                userId: currentUser.uid,
+                latitude: clickLat,
+                longitude: clickLon,
+                title,
+                notes,
+                address,
+                createdAt: serverTimestamp(),
+                updatedAt: serverTimestamp()
+            };
+
+            const docRef = await addDoc(collection(db, 'locations'), locationData);
+            const locationId = docRef.id;
+
+            // Upload image if selected
+            if (selectedNewImage) {
+                try {
+                    const imageUrl = await uploadImageToStorage(selectedNewImage, locationId);
+                    
+                    // Update location with image URL
+                    await updateDoc(doc(db, 'locations', locationId), {
+                        imageUrl: imageUrl
+                    });
+                } catch (imageError) {
+                    console.error('Error uploading image:', imageError);
+                    showError('Location created but image upload failed. You can add an image by editing the location.');
+                }
+            }
+
+            // Clear and close modal
+            document.getElementById('new-title').value = '';
+            document.getElementById('new-notes').value = '';
+            document.getElementById('new-address').value = '';
+            document.getElementById('new-image').value = '';
+            document.getElementById('new-image-preview').innerHTML = '';
+            selectedNewImage = null;
+            document.getElementById('creation-modal').style.display = 'none';
+
+            if (tempMarker) {
+                map.removeLayer(tempMarker);
+                tempMarker = null;
+            }
+
+            // Exit creation mode
+            toggleCreationMode();
+
+            // Reload locations
+            await loadLocationsFromFirestore();
+
+            showSuccess('Location added successfully!');
+        } catch (error) {
+            console.error('Error adding location:', error);
+            showError('Failed to add location. Please try again.');
+        } finally {
+            showLoading(false);
+        }
+    }
+
+    // Cancel new location
+    function cancelNewLocation() {
+        if (tempMarker) {
+            map.removeLayer(tempMarker);
+            tempMarker = null;
+        }
+        document.getElementById('creation-modal').style.display = 'none';
+        document.getElementById('new-title').value = '';
+        document.getElementById('new-notes').value = '';
+        document.getElementById('new-address').value = '';
+        document.getElementById('new-image').value = '';
+        document.getElementById('new-image-preview').innerHTML = '';
+        selectedNewImage = null;
+    }
+});
