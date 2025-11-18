@@ -4,6 +4,9 @@ import { auth, db, storage, ref, uploadBytes, getDownloadURL, deleteObject,
          orderBy, serverTimestamp } from './firebase-config.js';
 import { showLoading, showError, showSuccess, handleError } from './utils.js';
 
+// User profile cache to avoid redundant fetches
+const userProfileCache = new Map();
+
 // Wait for DOM and deferred scripts to load
 document.addEventListener('DOMContentLoaded', function() {
     let map;
@@ -129,22 +132,58 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Load locations from Firestore with lazy loading
+    // Helper function to fetch user profile with caching
+    async function fetchUserProfile(userId) {
+        if (!userId) {
+            return { displayName: 'Unknown User', email: '' };
+        }
+
+        // Check cache first
+        if (userProfileCache.has(userId)) {
+            return userProfileCache.get(userId);
+        }
+
+        // Fetch from Firestore
+        try {
+            const userDoc = await getDoc(doc(db, 'users', userId));
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                const profile = {
+                    displayName: userData.displayName || userData.email || 'Unknown User',
+                    email: userData.email || ''
+                };
+                userProfileCache.set(userId, profile);
+                return profile;
+            }
+        } catch (error) {
+            console.error('Error loading user:', error);
+        }
+
+        // Return default and cache it
+        const defaultProfile = { displayName: 'Unknown User', email: '' };
+        userProfileCache.set(userId, defaultProfile);
+        return defaultProfile;
+    }
+
+    // Load locations from Firestore with optimized performance
     async function loadLocationsFromFirestore() {
         showLoading(true);
         try {
-                  // Clear existing markers from the cluster group
-                  markers.clearLayers();
+            // Clear existing markers from the cluster group
+            markers.clearLayers();
                  
             const locationsRef = collection(db, 'locations');
             const q = query(locationsRef, orderBy('createdAt', 'desc'));
             const querySnapshot = await getDocs(q);
 
-            allMarkers = [];
-            let validMarkers = 0;
-            const batchSize = 50; // Load markers in batches for better performance
-            let currentBatch = [];
+            // Hide loading overlay early - we'll show markers immediately
+            showLoading(false);
 
+            allMarkers = [];
+            const locationData = [];
+            const uniqueUserIds = new Set();
+
+            // First pass: collect all location data and unique user IDs
             for (const docSnap of querySnapshot.docs) {
                 const data = docSnap.data();
                 const locationId = docSnap.id;
@@ -156,46 +195,63 @@ document.addEventListener('DOMContentLoaded', function() {
                 const address = data.address || '';
                 const userId = data.userId || '';
 
-                // Get username from user profile (batch these requests if possible)
-                let username = 'Unknown User';
-                if (userId) {
-                    try {
-                        const userDoc = await getDoc(doc(db, 'users', userId));
-                        if (userDoc.exists()) {
-                            username = userDoc.data().displayName || userDoc.data().email || 'Unknown User';
-                        }
-                    } catch (error) {
-                        console.error('Error loading user:', error);
-                    }
-                }
-
                 if (!isNaN(lat) && !isNaN(lon)) {
-                    const popupContent = createPopupContent(locationId, title, lat, lon, notes, address, username, userId);
-                    const marker = L.marker([lat, lon]).bindPopup(popupContent);
-
-                    const markerObj = {
+                    locationData.push({
                         locationId,
                         title,
                         notes,
                         address,
-                        user: username,
                         userId,
                         lat,
-                        lon,
-                        marker
-                    };
+                        lon
+                    });
 
-                    allMarkers.push(markerObj);
-                    currentBatch.push(markerObj);
-                    validMarkers++;
-
-                    // Add markers in batches to avoid blocking the UI
-                    if (currentBatch.length >= batchSize) {
-                        currentBatch.forEach(obj => markers.addLayer(obj.marker));
-                        currentBatch = [];
-                        // Allow UI to update between batches
-                        await new Promise(resolve => setTimeout(resolve, 10));
+                    if (userId) {
+                        uniqueUserIds.add(userId);
                     }
+                }
+            }
+
+            // Fetch all unique user profiles in parallel
+            const userIds = Array.from(uniqueUserIds);
+            const userProfilePromises = userIds.map(userId => fetchUserProfile(userId));
+            await Promise.all(userProfilePromises);
+
+            // Second pass: create markers with cached user data
+            let validMarkers = 0;
+            const batchSize = 100; // Increased batch size since we're not waiting for user fetches
+            let currentBatch = [];
+
+            for (const location of locationData) {
+                const { locationId, title, notes, address, userId, lat, lon } = location;
+
+                // Get username from cache (already fetched)
+                const userProfile = await fetchUserProfile(userId);
+                const username = userProfile.displayName;
+
+                const popupContent = createPopupContent(locationId, title, lat, lon, notes, address, username, userId);
+                const marker = L.marker([lat, lon]).bindPopup(popupContent);
+
+                const markerObj = {
+                    locationId,
+                    title,
+                    notes,
+                    address,
+                    user: username,
+                    userId,
+                    lat,
+                    lon,
+                    marker
+                };
+
+                allMarkers.push(markerObj);
+                currentBatch.push(markerObj);
+                validMarkers++;
+
+                // Add markers in larger batches
+                if (currentBatch.length >= batchSize) {
+                    currentBatch.forEach(obj => markers.addLayer(obj.marker));
+                    currentBatch = [];
                 }
             }
 
@@ -206,7 +262,6 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Error loading locations:', error);
             showError('Failed to load locations. Please refresh the page.');
-        } finally {
             showLoading(false);
         }
     }
