@@ -54,6 +54,26 @@
             text-align: center;
             padding: 20px;
         }
+
+        .location-image {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto;
+            text-align: center;
+        }
+
+        .location-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .location-image .no-image {
+            color: #999;
+            font-style: italic;
+            padding: 20px;
+        }
     </style>
 </head>
 <body>
@@ -115,6 +135,13 @@
                     // Build HTML for details
                     let html = `<h1>${data.title}</h1>`;
 
+                    // Display image if exists
+                    if (data.imageUrl) {
+                        html += `<div class="location-image">
+                            <img src="${data.imageUrl}" alt="${data.title}" loading="lazy" onerror="this.parentElement.innerHTML='<div class=\\'no-image\\'>Image failed to load</div>'">
+                        </div>`;
+                    }
+
                     html += `<div class="detail"><strong>Latitude:</strong> ${data.latitude}</div>`;
                     html += `<div class="detail"><strong>Longitude:</strong> ${data.longitude}</div>`;
 
@@ -146,4 +173,3 @@
     </script>
 </body>
 </html>
-
