@@ -10,6 +10,9 @@
     font-size: 16px;
     font-weight: bold;
     transition: background 0.3s, opacity 0.3s;
+    text-decoration: none;
+    display: inline-block;
+    text-align: center;
 }
 
 .btn:disabled {
@@ -18,6 +21,7 @@
     opacity: 0.6;
 }
 
+/* Blue - Login, Signup, Google Login, Cancel, Back, View, Settings */
 .btn-primary {
     background: #007cba;
     color: white;
@@ -25,19 +29,19 @@
 
 .btn-primary:hover:not(:disabled) {
     background: #005a87;
-    opacity: 0.9;
 }
 
+/* Green - Update, Edit, Submit, Add, Save */
 .btn-secondary {
-    background: #6c757d;
+    background: #28a745;
     color: white;
 }
 
 .btn-secondary:hover:not(:disabled) {
-    background: #5a6268;
-    opacity: 0.9;
+    background: #218838;
 }
 
+/* Red - Logout, Delete, Remove */
 .btn-danger {
     background: #dc3545;
     color: white;
@@ -45,7 +49,6 @@
 
 .btn-danger:hover:not(:disabled) {
     background: #c82333;
-    opacity: 0.9;
 }
 
 /* ===== MODALS ===== */
