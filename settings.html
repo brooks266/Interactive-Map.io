@@ -205,6 +205,90 @@
             font-size: 12px;
             margin-left: 5px;
         }
+
+        .social-links {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .social-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            color: #333;
+            text-decoration: none;
+            font-size: 20px;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .social-link:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .social-link.tiktok {
+            background: #000000;
+            color: #00f2ea;
+        }
+
+        .social-link.tiktok:hover {
+            background: #00f2ea;
+            color: #000000;
+            border-color: #000000;
+        }
+
+        .social-link.instagram {
+            background: linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%);
+            color: white;
+        }
+
+        .social-link.instagram:hover {
+            transform: translateY(-3px) scale(1.05);
+        }
+
+        .social-link.facebook {
+            background: #1877f2;
+            color: white;
+        }
+
+        .social-link.facebook:hover {
+            background: #145dbf;
+        }
+
+        .social-link.twitter {
+            background: #000000;
+            color: white;
+        }
+
+        .social-link.twitter:hover {
+            background: #333333;
+        }
+
+        .social-media-section {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid #f0f0f0;
+        }
+
+        .social-media-section h4 {
+            color: #007cba;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+
+        .social-input-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
         
         .btn-container {
             display: flex;
@@ -317,6 +401,9 @@
                 </div>
                 <h2 class="username-display" id="username-display">Loading...</h2>
                 <p class="email-display" id="email-display"></p>
+                
+                <!-- Social Media Links -->
+                <div class="social-links" id="social-links"></div>
             </div>
             
             <!-- Profile Picture Upload Section (shown only for own profile) -->
@@ -358,6 +445,33 @@
                 <div class="form-group">
                     <label for="bio">Bio</label>
                     <textarea id="bio" placeholder="Tell us about yourself..."></textarea>
+                </div>
+                
+                <!-- Social Media Section -->
+                <div class="social-media-section">
+                    <h4>Social Media Links</h4>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">Add your social media usernames (without @ symbol)</p>
+                    <div class="social-input-group">
+                        <div class="form-group">
+                            <label for="tiktok">TikTok Username</label>
+                            <input type="text" id="tiktok" placeholder="username" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="instagram">Instagram Username</label>
+                            <input type="text" id="instagram" placeholder="username" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="facebook">Facebook Username</label>
+                            <input type="text" id="facebook" placeholder="username" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="twitter">X/Twitter Username</label>
+                            <input type="text" id="twitter" placeholder="username" />
+                        </div>
+                    </div>
                 </div>
                 
                 <div class="btn-container">
@@ -500,6 +614,35 @@
             }
         }
 
+        // Display social media links
+        function displaySocialMediaLinks(socialMedia) {
+            const socialLinksContainer = document.getElementById('social-links');
+            socialLinksContainer.innerHTML = '';
+            
+            if (!socialMedia) return;
+            
+            const platforms = [
+                { name: 'tiktok', icon: '🎵', url: (username) => `https://www.tiktok.com/@${username}` },
+                { name: 'instagram', icon: '📷', url: (username) => `https://www.instagram.com/${username}` },
+                { name: 'facebook', icon: '👤', url: (username) => `https://www.facebook.com/${username}` },
+                { name: 'twitter', icon: '𝕏', url: (username) => `https://twitter.com/${username}` }
+            ];
+            
+            platforms.forEach(platform => {
+                const username = socialMedia[platform.name];
+                if (username && username.trim()) {
+                    const link = document.createElement('a');
+                    link.href = platform.url(username.trim());
+                    link.className = `social-link ${platform.name}`;
+                    link.target = '_blank';
+                    link.rel = 'noopener noreferrer';
+                    link.title = `${platform.name.charAt(0).toUpperCase() + platform.name.slice(1)}: @${username}`;
+                    link.textContent = platform.icon;
+                    socialLinksContainer.appendChild(link);
+                }
+            });
+        }
+
         // Load user profile
         async function loadUserProfile(userId) {
             showLoading(true);
@@ -549,6 +692,13 @@
                     document.getElementById('email').value = currentUser.email || '';
                     document.getElementById('bio').value = bio;
                     
+                    // Populate social media fields
+                    const socialMedia = currentUserData.socialMedia || {};
+                    document.getElementById('tiktok').value = socialMedia.tiktok || '';
+                    document.getElementById('instagram').value = socialMedia.instagram || '';
+                    document.getElementById('facebook').value = socialMedia.facebook || '';
+                    document.getElementById('twitter').value = socialMedia.twitter || '';
+                    
                     // Email verification status
                     const emailDisplay = document.getElementById('email-display');
                     emailDisplay.innerHTML = currentUser.email || 'No email';
@@ -572,6 +722,9 @@
                 
                 // Display profile picture or initial
                 displayProfilePicture(currentUserData.photoURL);
+                
+                // Display social media links
+                displaySocialMediaLinks(currentUserData.socialMedia);
                 
                 // Format dates using utility function
                 document.getElementById('account-created').textContent = formatFirestoreDate(currentUserData.createdAt);
@@ -790,6 +943,12 @@
             const displayName = document.getElementById('displayName').value.trim();
             const bio = document.getElementById('bio').value.trim();
             
+            // Get social media usernames
+            const tiktok = document.getElementById('tiktok').value.trim();
+            const instagram = document.getElementById('instagram').value.trim();
+            const facebook = document.getElementById('facebook').value.trim();
+            const twitter = document.getElementById('twitter').value.trim();
+            
             if (!displayName) {
                 showError('Display name is required.');
                 return;
@@ -801,6 +960,12 @@
                 await setDoc(doc(db, 'users', currentUser.uid), {
                     displayName,
                     bio,
+                    socialMedia: {
+                        tiktok,
+                        instagram,
+                        facebook,
+                        twitter
+                    },
                     updatedAt: serverTimestamp()
                 }, { merge: true });
 
@@ -823,6 +988,14 @@
             if (originalData) {
                 document.getElementById('displayName').value = originalData.displayName || '';
                 document.getElementById('bio').value = originalData.bio || '';
+                
+                // Reset social media fields
+                const socialMedia = originalData.socialMedia || {};
+                document.getElementById('tiktok').value = socialMedia.tiktok || '';
+                document.getElementById('instagram').value = socialMedia.instagram || '';
+                document.getElementById('facebook').value = socialMedia.facebook || '';
+                document.getElementById('twitter').value = socialMedia.twitter || '';
+                
                 showSuccess('Form reset to saved values.');
             }
         });
