@@ -161,11 +161,11 @@
 
                     // Add Google Street View link
                     const streetViewUrl = `http://maps.google.com/maps?q=&layer=c&cbll=${data.latitude},${data.longitude}`;
-                    html += `<a href="${streetViewUrl}" target="_blank" class="streetview-link">View in Google Street View</a>`;
+                    html += `<a href="${streetViewUrl}" target="_blank" class="btn btn-primary">View in Google Street View</a>`;
 
                     // Add Navigate button - works across all platforms (mobile/desktop, iOS/Android)
                     const navigateUrl = `https://www.google.com/maps/dir/?api=1&destination=${data.latitude},${data.longitude}`;
-                    html += `<a href="${navigateUrl}" target="_blank" class="navigate-link">Navigate to Location</a>`;
+                    html += `<a href="${navigateUrl}" target="_blank" class="btn btn-secondary">Navigate to Location</a>`;
 
                     document.getElementById('details').innerHTML = html;
                 } else {
@@ -181,6 +181,7 @@
     </script>
 </body>
 </html>
+
 
 
 
