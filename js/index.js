@@ -285,9 +285,9 @@ document.addEventListener('DOMContentLoaded', function() {
         // Add Edit/Delete buttons if user owns this location
         if (currentUser && userId === currentUser.uid) {
             popupContent += `
-                <div class="popup-actions">
-                    <button class="popup-edit" onclick="window.editLocation('${locationId}')">Edit</button>
-                    <button class="popup-delete" onclick="window.confirmDeleteLocation('${locationId}')">Delete</button>
+                <div class="popup-actions2">
+                    <button class="btn btn-primary" onclick="window.editLocation('${locationId}')">Edit</button>
+                    <button class="btn btn-danger" onclick="window.confirmDeleteLocation('${locationId}')">Delete</button>
                 </div>
             `;
         }
@@ -782,3 +782,4 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedNewImage = null;
     }
 });
+
