@@ -280,14 +280,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Add View Details link
-        popupContent += `<br><br><a href="./location.html?id=${locationId}" class="btn btn-primary">View Details</a>`;
+        popupContent += `<br><br><a href="./location.html?id=${locationId}" class="btn btn-primary btn-popup">View Details</a>`;
 
         // Add Edit/Delete buttons if user owns this location
         if (currentUser && userId === currentUser.uid) {
             popupContent += `
                 <div class="popup-actions">
-                    <button class="btn btn-primary" onclick="window.editLocation('${locationId}')">Edit</button>
-                    <button class="btn btn-danger" onclick="window.confirmDeleteLocation('${locationId}')">Delete</button>
+                    <button class="btn btn-primary btn-popup" onclick="window.editLocation('${locationId}')">Edit</button>
+                    <button class="btn btn-danger btn-popup" onclick="window.confirmDeleteLocation('${locationId}')">Delete</button>
                 </div>
             `;
         }
@@ -782,6 +782,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedNewImage = null;
     }
 });
+
 
 
 
