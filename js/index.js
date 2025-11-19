@@ -280,7 +280,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Add View Details link
-        popupContent += `<br><br><a href="./location.html?id=${locationId}" class="btn btn-primary btn-popup">View Details</a>`;
+        popupContent += `<br><br><a href="./location.html?id=${locationId}" class="btn btn-primary btn-popup" style="color:white;">View Details</a>`;
 
         // Add Edit/Delete buttons if user owns this location
         if (currentUser && userId === currentUser.uid) {
@@ -782,6 +782,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedNewImage = null;
     }
 });
+
 
 
 
