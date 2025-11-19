@@ -17,6 +17,7 @@ body {
 
 /* ===== BUTTONS ===== */
 .btn {
+    text-decoration: none;
     padding: 10px 15px;
     border: none;
     border-radius: 4px;
@@ -321,3 +322,4 @@ textarea {
         font-size: 16px; /* Prevent zoom on iOS */
     }
 }
+
