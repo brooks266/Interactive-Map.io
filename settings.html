@@ -622,10 +622,10 @@
             if (!socialMedia) return;
             
             const platforms = [
-                { name: 'tiktok', icon: '🎵', url: (username) => `https://www.tiktok.com/@${username}` },
-                { name: 'instagram', icon: '📷', url: (username) => `https://www.instagram.com/${username}` },
-                { name: 'facebook', icon: '👤', url: (username) => `https://www.facebook.com/${username}` },
-                { name: 'twitter', icon: '𝕏', url: (username) => `https://twitter.com/${username}` }
+                { name: 'tiktok', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e8/Tiktok_logo.png', url: (username) => `https://www.tiktok.com/@${username}` },
+                { name: 'instagram', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/a/a5/Instagram_icon.png', url: (username) => `https://www.instagram.com/${username}` },
+                { name: 'facebook', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/51/Facebook_f_logo_%282019%29.svg', url: (username) => `https://www.facebook.com/${username}` },
+                { name: 'twitter', iconUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/19/X_logo_twitter_new_brand_icon.svg', url: (username) => `https://twitter.com/${username}` }
             ];
             
             platforms.forEach(platform => {
@@ -637,7 +637,15 @@
                     link.target = '_blank';
                     link.rel = 'noopener noreferrer';
                     link.title = `${platform.name.charAt(0).toUpperCase() + platform.name.slice(1)}: @${username}`;
-                    link.textContent = platform.icon;
+                    
+                    const img = document.createElement('img');
+                    img.src = platform.iconUrl;
+                    img.alt = `${platform.name} icon`;
+                    img.style.width = '24px';
+                    img.style.height = '24px';
+                    img.style.objectFit = 'contain';
+                    
+                    link.appendChild(img);
                     socialLinksContainer.appendChild(link);
                 }
             });
