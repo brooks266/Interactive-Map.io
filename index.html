@@ -65,21 +65,22 @@
         
         #search:focus {
             outline: none;
-            border-color: #007cba;
+            border-color: var(--primary-color);
             box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
         }
         
         #add-btn.active {
-            background: #28a745;
+            background: var(--success-color);
             color: #ccc;
         }
 
         #stacker {
-                display: flex;
-                gap: 10px;
+            display: flex;
+            gap: 10px;
         }
+        
         #search {
-                min-width: auto;
+            min-width: auto;
         }
         
         @media (max-width: 480px) {
@@ -102,44 +103,6 @@
             border-radius: 4px; 
             z-index: 1001; 
             font-size: 14px; 
-        }
-
-        .popup-actions {
-            margin-top: 10px;
-            display: flex;
-            gap: 5px;
-        }
-
-        .btn-popup {
-            padding: 5px 10px;
-            font-size: 12px;
-            color: white;
-        }
-
-        .current-image {
-            margin: 10px 0;
-            text-align: center;
-        }
-
-        .current-image img {
-            max-width: 100%;
-            max-height: 150px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        .current-image .no-image {
-            color: #999;
-            font-style: italic;
-            padding: 10px;
-        }
-
-        .popup-image {
-            width: 100%;
-            max-width: 200px;
-            height: auto;
-            border-radius: 4px;
-            margin: 10px 0;
         }
     </style>
 </head>
