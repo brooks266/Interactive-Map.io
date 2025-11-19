@@ -32,31 +32,9 @@
             color: #005a87;
         }
 
-        .back-link, .streetview-link, .navigate-link {
+        .btn-location {
             display: inline-block;
             margin: 10px 5px;
-            padding: 10px 15px;
-            text-decoration: none;
-            border-radius: 4px;
-            font-weight: bold;
-        }
-
-        .back-link, .streetview-link{
-            background: #007cba;
-            color: white;
-        }
-
-        .back-link, .streetview-link:hover {
-            background: #005a87;
-        }
-
-        .navigate-link {
-            background: #28a745;
-            color: white;
-        }
-
-        .navigate-link:hover {
-            background: #218838;
         }
 
         .location-image {
@@ -82,7 +60,7 @@
 </head>
 <body>
     <div class="container">
-        <a href="./index.html" class="btn btn-primary">← Back to Map</a>
+        <a href="./index.html" class="btn btn-primary btn-location">← Back to Map</a>
 
         <div id="details"></div>
     </div>
@@ -161,11 +139,11 @@
 
                     // Add Google Street View link
                     const streetViewUrl = `http://maps.google.com/maps?q=&layer=c&cbll=${data.latitude},${data.longitude}`;
-                    html += `<a href="${streetViewUrl}" target="_blank" class="btn btn-primary">View in Google Street View</a>`;
+                    html += `<a href="${streetViewUrl}" target="_blank" class="btn btn-primary btn-location">View in Google Street View</a>`;
 
                     // Add Navigate button - works across all platforms (mobile/desktop, iOS/Android)
                     const navigateUrl = `https://www.google.com/maps/dir/?api=1&destination=${data.latitude},${data.longitude}`;
-                    html += `<a href="${navigateUrl}" target="_blank" class="btn btn-secondary">Navigate to Location</a>`;
+                    html += `<a href="${navigateUrl}" target="_blank" class="btn btn-secondary btn-location">Navigate to Location</a>`;
 
                     document.getElementById('details').innerHTML = html;
                 } else {
@@ -181,6 +159,7 @@
     </script>
 </body>
 </html>
+
 
 
 
