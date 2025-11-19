@@ -491,7 +491,7 @@ document.addEventListener('DOMContentLoaded', function() {
         reader.onload = function(e) {
             document.getElementById('new-image-preview').innerHTML = `
                 <img src="${e.target.result}" alt="Preview">
-                <button type="button" class="remove-preview" onclick="document.getElementById('new-image').value=''; document.getElementById('new-image-preview').innerHTML=''; selectedNewImage=null;">Remove</button>
+                <button type="button" class="btn btn-danger" onclick="document.getElementById('new-image').value=''; document.getElementById('new-image-preview').innerHTML=''; selectedNewImage=null;">Remove</button>
             `;
         };
         reader.readAsDataURL(file);
@@ -519,7 +519,7 @@ document.addEventListener('DOMContentLoaded', function() {
         reader.onload = function(e) {
             document.getElementById('edit-image-preview').innerHTML = `
                 <img src="${e.target.result}" alt="Preview">
-                <button type="button" class="remove-preview" onclick="document.getElementById('edit-image').value=''; document.getElementById('edit-image-preview').innerHTML=''; selectedEditImage=null;">Remove</button>
+                <button type="button" class="btn btn-danger" onclick="document.getElementById('edit-image').value=''; document.getElementById('edit-image-preview').innerHTML=''; selectedEditImage=null;">Remove</button>
             `;
         };
         reader.readAsDataURL(file);
@@ -782,4 +782,5 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedNewImage = null;
     }
 });
+
 
