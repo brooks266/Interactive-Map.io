@@ -69,11 +69,11 @@
             flex: 1;
             min-width: 45vw;
             border: 1px solid #ddd;
+            font-size: 14px;
             background: white;
             transition: all 0.3s ease;
             box-sizing: border-box;
             margin: 0;
-            padding: 10;
         }
         
         #search:focus {
@@ -98,7 +98,7 @@
         
         @media (max-width: 480px) {
             #search-container {
-                flex-direction: column;
+                flex-wrap: wrap;
                 gap: 12px;
                 min-width: 85vw;
                 max-width: 90vw;
@@ -108,10 +108,12 @@
             #search {
                 width: 100%;
                 min-width: unset;
+                flex-basis: 100%;
             }
             
             #search-container .btn {
-                width: 100%;
+                flex: 1;
+                min-width: 0;
             }
         }
         
@@ -195,6 +197,4 @@
     <script type="module" src="./js/index.js"></script>
 </body>
 </html>
-
-
 
