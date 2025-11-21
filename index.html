@@ -54,42 +54,87 @@
             transform: translateX(-50%);
             z-index: 100;
             background: rgba(255, 255, 255, 0.95);
-            padding: 10px 15px;
+            padding: 12px 18px;
             border-radius: 25px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            gap: 12px;
             min-width: 50vw;
+            max-width: 90vw;
         }
         
-        @media (max-width: 480px) {
-            #search-container {
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
-                min-width: 75vw;
-                padding: 15px;
-                bottom: 10px;
-            }
+        #search {
+            flex: 1;
+            min-width: 200px;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 14px;
+            background: white;
+            transition: all 0.3s ease;
         }
+        
         #search:focus {
             outline: none;
             border-color: var(--primary-color);
             box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
         }
         
+        #stacker {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        #stacker .btn {
+            padding: 10px 16px;
+            white-space: nowrap;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: fit-content;
+        }
+        
+        #add-btn {
+            font-size: 20px;
+            line-height: 1;
+            padding: 10px 14px;
+        }
+        
         #add-btn.active {
             background: var(--success-color);
             color: #ccc;
         }
-
-        #stacker {
-            display: flex;
-        }
         
-        #search {
-            min-width: auto;
+        @media (max-width: 480px) {
+            #search-container {
+                flex-direction: column;
+                gap: 12px;
+                min-width: 85vw;
+                max-width: 90vw;
+                padding: 16px;
+                bottom: 10px;
+            }
+            
+            #search {
+                width: 100%;
+                min-width: unset;
+            }
+            
+            #stacker {
+                width: 100%;
+                justify-content: center;
+                gap: 10px;
+            }
+            
+            #stacker .btn {
+                flex: 1;
+                min-width: 0;
+            }
         }
         
         #offline-message { 
@@ -174,18 +219,3 @@
     <script type="module" src="./js/index.js"></script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
