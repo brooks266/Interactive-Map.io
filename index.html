@@ -55,6 +55,7 @@
             z-index: 100;
             background: rgba(255, 255, 255, 0.95);
             padding: 12px 18px;
+            border-radius: 25px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
@@ -73,6 +74,8 @@
             font-size: 14px;
             background: white;
             transition: all 0.3s ease;
+            height: 40px;
+            box-sizing: border-box;
         }
         
         #search:focus {
@@ -81,14 +84,7 @@
             box-shadow: 0 0 0 2px rgba(0, 124, 186, 0.2);
         }
         
-        #stacker {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        
-        #stacker .btn {
+        #search-container .btn {
             padding: 10px 16px;
             white-space: nowrap;
             height: 40px;
@@ -96,6 +92,7 @@
             align-items: center;
             justify-content: center;
             min-width: fit-content;
+            flex-shrink: 0;
         }
         
         #add-btn.active {
@@ -118,15 +115,8 @@
                 min-width: unset;
             }
             
-            #stacker {
+            #search-container .btn {
                 width: 100%;
-                justify-content: center;
-                gap: 10px;
-            }
-            
-            #stacker .btn {
-                flex: 1;
-                min-width: 0;
             }
         }
         
@@ -146,11 +136,9 @@
 </head>
 <body>
     <div id="search-container">
-        <div id="stacker">
-            <input type="text" id="search" placeholder="Search by title, notes, user, etc." />
-            <button class="btn btn-secondary" id="add-btn" title="Add New Location">+</button>
-            <button class="btn btn-primary" id="settings-btn">Settings</button>
-        </div>
+        <input type="text" id="search" placeholder="Search by title, notes, user, etc." />
+        <button class="btn btn-secondary" id="add-btn" title="Add New Location">+</button>
+        <button class="btn btn-primary" id="settings-btn">Settings</button>
     </div>
     
     <div id="map"></div>
@@ -212,4 +200,3 @@
     <script type="module" src="./js/index.js"></script>
 </body>
 </html>
-
