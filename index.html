@@ -55,7 +55,6 @@
             z-index: 100;
             background: rgba(255, 255, 255, 0.95);
             padding: 12px 18px;
-            border-radius: 25px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
@@ -99,15 +98,9 @@
             min-width: fit-content;
         }
         
-        #add-btn {
-            font-size: 20px;
-            line-height: 1;
-            padding: 10px 14px;
-        }
-        
         #add-btn.active {
             background: var(--success-color);
-            color: #ccc;
+            color: white;
         }
         
         @media (max-width: 480px) {
@@ -153,8 +146,8 @@
 </head>
 <body>
     <div id="search-container">
-        <input type="text" id="search" placeholder="Search by title, notes, user, etc." />
         <div id="stacker">
+            <input type="text" id="search" placeholder="Search by title, notes, user, etc." />
             <button class="btn btn-secondary" id="add-btn" title="Add New Location">+</button>
             <button class="btn btn-primary" id="settings-btn">Settings</button>
         </div>
@@ -219,3 +212,4 @@
     <script type="module" src="./js/index.js"></script>
 </body>
 </html>
+
