@@ -49,18 +49,19 @@
         
         #search-container {
             position: fixed;
-            bottom: 20px;
+            bottom: 10px;
             left: 50%;
             transform: translateX(-50%);
             z-index: 100;
             background: rgba(255, 255, 255, 0.95);
-            padding: 10px 15px;
+            padding: 15px;
             border-radius: 25px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
             display: flex;
             align-items: center;
             gap: 10px;
-            min-width: 50vw;
+            min-width: 25vw;
+            flex-direction: column;
         }
         
         #search:focus {
@@ -82,15 +83,6 @@
             min-width: auto;
         }
         
-        @media (max-width: 480px) {
-            #search-container {
-                flex-direction: column;
-                min-width: 260px;
-                padding: 15px;
-                bottom: 10px;
-            }
-        }
-        
         #offline-message { 
             display: none; 
             position: fixed; 
@@ -107,8 +99,8 @@
 </head>
 <body>
     <div id="search-container">
+        <input type="text" id="search" placeholder="Search by title, notes, user, etc." />
         <div id="stacker">
-            <input type="text" id="search" placeholder="Search by title, notes, user, etc." />
             <button class="btn btn-secondary" id="add-btn" title="Add New Location">+</button>
             <button class="btn btn-primary" id="settings-btn">Settings</button>
         </div>
@@ -173,6 +165,7 @@
     <script type="module" src="./js/index.js"></script>
 </body>
 </html>
+
 
 
 
