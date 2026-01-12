@@ -1,6 +1,6 @@
 import { auth, db, storage, ref, uploadBytes, getDownloadURL, deleteObject,
          onAuthStateChanged, signOut, collection, addDoc,
-         getDocs, doc, getDoc, updateDoc, deleteDoc, query, where,
+         getDocs, doc, getDoc, setDoc, updateDoc, deleteDoc, query, where,
          orderBy, serverTimestamp } from './firebase-config.js';
 import { showLoading, showError, showSuccess, handleError } from './utils.js';
 
@@ -24,10 +24,24 @@ document.addEventListener('DOMContentLoaded', function() {
     let currentLocationImageUrl = null;
 
     // Session Check: Redirect to login if not authenticated
+    let authCheckComplete = false;
     onAuthStateChanged(auth, async (user) => {
-        if (!user) {
-            window.location.href = './login.html';
-            return;
+        if (!authCheckComplete) {
+            authCheckComplete = true;
+            // Only redirect if user is not authenticated AND we're not already on login.html
+            if (!user && !window.location.pathname.includes('login.html')) {
+                window.location.href = './login.html';
+                return;
+            }
+            
+            if (!user) {
+                return;
+            }
+        } else {
+            // If auth state changes after initial check, don't redirect
+            if (!user) {
+                return;
+            }
         }
 
         currentUser = user;
@@ -37,6 +51,23 @@ document.addEventListener('DOMContentLoaded', function() {
             const userDoc = await getDoc(doc(db, 'users', user.uid));
             if (userDoc.exists()) {
                 currentUserData = userDoc.data();
+            } else {
+                // Create user profile if it doesn't exist (safety check)
+                console.log('User profile not found, creating default profile...');
+                currentUserData = {
+                    displayName: user.displayName || user.email?.split('@')[0] || 'User',
+                    email: user.email || '',
+                    bio: '',
+                    createdAt: serverTimestamp(),
+                    lastLogin: serverTimestamp()
+                };
+                
+                try {
+                    await setDoc(doc(db, 'users', user.uid), currentUserData);
+                    console.log('Default user profile created successfully');
+                } catch (createError) {
+                    console.error('Error creating default profile:', createError);
+                }
             }
         } catch (error) {
             console.error('Error loading user profile:', error);
@@ -229,7 +260,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const userProfile = await fetchUserProfile(userId);
                 const username = userProfile.displayName;
 
-                const popupContent = createPopupContent(locationId, title, lat, lon, notes, address, username, userId);
+                // Get voting data from the original Firestore document
+                const locationDoc = querySnapshot.docs.find(doc => doc.id === locationId);
+                const locationDocData = locationDoc ? locationDoc.data() : {};
+                const upvotes = locationDocData.upvotes || [];
+                const downvotes = locationDocData.downvotes || [];
+
+                const popupContent = createPopupContent(locationId, title, lat, lon, notes, address, username, userId, upvotes, downvotes);
                 const marker = L.marker([lat, lon]).bindPopup(popupContent);
 
                 const markerObj = {
@@ -241,6 +278,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     userId,
                     lat,
                     lon,
+                    upvotes,
+                    downvotes,
                     marker
                 };
 
@@ -267,13 +306,35 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Create popup content
-    function createPopupContent(locationId, title, lat, lon, notes, address, user, userId) {
+    function createPopupContent(locationId, title, lat, lon, notes, address, user, userId, upvotes = [], downvotes = []) {
         let popupContent = `<b>${title}</b><br>`;
+        
+        // Calculate and display vote score
+        const upvoteCount = upvotes.length;
+        const downvoteCount = downvotes.length;
+        const voteScore = upvoteCount - downvoteCount;
+        
+        // Determine color based on score
+        let scoreColor = '#666'; // gray for zero
+        let scorePrefix = '';
+        if (voteScore > 0) {
+            scoreColor = '#28a745'; // green for positive
+            scorePrefix = '+';
+        } else if (voteScore < 0) {
+            scoreColor = '#dc3545'; // red for negative
+        }
+        
+        // Add vote score display
+        popupContent += `<div style="margin: 8px 0; padding: 6px 10px; background: #f8f9fa; border-radius: 4px; border-left: 3px solid ${scoreColor};">
+            <strong style="color: ${scoreColor}; font-size: 14px;">Score: ${scorePrefix}${voteScore}</strong>
+            <span style="color: #666; font-size: 12px; margin-left: 8px;">(↑${upvoteCount} ↓${downvoteCount})</span>
+        </div>`;
+        
         if (address) {
             popupContent += `<br><strong>Address:</strong><br>${address}`;
         }
         if (user) {
-            popupContent += `<br><strong>User:</strong> ${user}`;
+            popupContent += `<br><strong>Added By:</strong><br>${user}`;
         }
         if (notes) {
             popupContent += `<br><br><strong>Notes:</strong><br>${notes}`;
@@ -614,13 +675,71 @@ document.addEventListener('DOMContentLoaded', function() {
                 visibleCount++;
             });
         } else {
+            // Check for rating search patterns
+            // Supports: "rating>100", "rating<5", ">1000", "<200", "rating>=50", "rating<=10", "rating=5"
+            const ratingPattern = /(?:rating\s*([><=]+)\s*(-?\d+))|^([><=]+)\s*(-?\d+)$/i;
+            const ratingMatch = term.match(ratingPattern);
+            
+            let ratingFilter = null;
+            let textSearchTerm = term;
+            
+            if (ratingMatch) {
+                // Extract operator and value
+                const operator = ratingMatch[1] || ratingMatch[3];
+                const value = parseInt(ratingMatch[2] || ratingMatch[4]);
+                
+                ratingFilter = { operator, value };
+                
+                // Remove rating pattern from text search term
+                textSearchTerm = term.replace(ratingPattern, '').trim();
+            }
+            
             allMarkers.forEach(markerObj => {
-                const titleMatch = markerObj.title.toLowerCase().includes(term);
-                const notesMatch = markerObj.notes.toLowerCase().includes(term);
-                const addressMatch = (markerObj.address || '').toLowerCase().includes(term);
-                const userMatch = (markerObj.user || '').toLowerCase().includes(term);
-
-                if (titleMatch || notesMatch || addressMatch || userMatch) {
+                let matchesRating = true;
+                let matchesText = true;
+                
+                // Check rating filter if present
+                if (ratingFilter) {
+                    const upvoteCount = (markerObj.upvotes || []).length;
+                    const downvoteCount = (markerObj.downvotes || []).length;
+                    const voteScore = upvoteCount - downvoteCount;
+                    
+                    const { operator, value } = ratingFilter;
+                    
+                    switch (operator) {
+                        case '>':
+                            matchesRating = voteScore > value;
+                            break;
+                        case '<':
+                            matchesRating = voteScore < value;
+                            break;
+                        case '>=':
+                            matchesRating = voteScore >= value;
+                            break;
+                        case '<=':
+                            matchesRating = voteScore <= value;
+                            break;
+                        case '=':
+                        case '==':
+                            matchesRating = voteScore === value;
+                            break;
+                        default:
+                            matchesRating = true;
+                    }
+                }
+                
+                // Check text search if present
+                if (textSearchTerm) {
+                    const titleMatch = markerObj.title.toLowerCase().includes(textSearchTerm);
+                    const notesMatch = markerObj.notes.toLowerCase().includes(textSearchTerm);
+                    const addressMatch = (markerObj.address || '').toLowerCase().includes(textSearchTerm);
+                    const userMatch = (markerObj.user || '').toLowerCase().includes(textSearchTerm);
+                    
+                    matchesText = titleMatch || notesMatch || addressMatch || userMatch;
+                }
+                
+                // Add marker if it matches both rating and text filters
+                if (matchesRating && matchesText) {
                     markers.addLayer(markerObj.marker);
                     visibleCount++;
                 }
@@ -782,6 +901,7 @@ document.addEventListener('DOMContentLoaded', function() {
         selectedNewImage = null;
     }
 });
+
 
 
 
